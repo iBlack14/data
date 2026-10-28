@@ -1,0 +1,4 @@
+Country/state/city database: https://github.com/dr5hn/countries-states-cities-database (ODbL 1.0). Simplified names-only derivative database, distributed under ODbL 1.0.
+Peru administrative hierarchy: https://github.com/RitchieRD/ubigeos-peru-data (CC0).
+Generated: 2026-10-28T07:53:57.904Z
+Rebuild source: scripts/prepare-geography.mjs in the application source.
