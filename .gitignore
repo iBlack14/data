@@ -32,7 +32,16 @@ yarn-error.log*
 *.pem
 
 # Checkout-local tool state
-/.wrangler/
+/.wrangler/*
+!/.wrangler/state/
+/.wrangler/state/*
+!/.wrangler/state/v3/
+/.wrangler/state/v3/*
+!/.wrangler/state/v3/d1/
+/.wrangler/state/v3/d1/*
+!/.wrangler/state/v3/d1/miniflare-D1DatabaseObject/
+/.wrangler/state/v3/d1/miniflare-D1DatabaseObject/*
+!/.wrangler/state/v3/d1/miniflare-D1DatabaseObject/*.sqlite
 /.sites-runtime/
 
 # Workspace scaffolding and publication archives

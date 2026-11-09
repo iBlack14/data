@@ -723,7 +723,7 @@ export default function CRM(){
   }
 
   const allCompanies=rows.filter(r=>r.kind==='company');
-  const companies=allCompanies.filter(r=>[r.phone,r.email,r.web].some(value=>typeof value==='string'&&value.trim().length>0));
+  const companies=allCompanies;
   const territories=rows.filter(r=>r.kind==='territory');
   const campaigns=rows.filter(r=>r.kind==='campaign');
   const quotes=rows.filter(r=>r.kind==='quote');
@@ -1051,6 +1051,8 @@ export default function CRM(){
     if(filters.stage&&r.stage!==filters.stage)return false;
 
     // Filtros de canal de contacto
+    if(filters.contact==='with_contact'&&!r.email&&!r.phone&&!r.web)return false;
+    if(filters.contact==='no_contact'&&(r.email||r.phone||r.web))return false;
     if(filters.contact==='email'&&!r.email)return false;
     if(filters.contact==='phone'&&!r.phone)return false;
     if(filters.contact==='both'&&(!r.email||!r.phone))return false;
@@ -1061,6 +1063,8 @@ export default function CRM(){
 
   const options=(key:string)=>[...new Set(companies.filter(r=>Object.entries(filters).every(([k,v])=>k===key||k==='stage'||k==='contact'||!v||r[k]===v)).map(r=>r[key]).filter(Boolean))].sort();
 
+  const totalWithContact=companies.filter(r=>Boolean(r.email||r.phone||r.web)).length;
+  const totalWithoutContact=companies.filter(r=>!r.email&&!r.phone&&!r.web).length;
   const totalWithEmail=companies.filter(r=>Boolean(r.email)).length;
   const totalWithPhone=companies.filter(r=>Boolean(r.phone)).length;
   const totalWithBoth=companies.filter(r=>Boolean(r.email&&r.phone)).length;
@@ -1587,24 +1591,38 @@ export default function CRM(){
               <span style={{fontSize:10,fontWeight:700,color:'#7a8d79',marginRight:4}}>CONTACTO:</span>
               <button 
                 type="button" 
-                style={{cursor:'pointer',border:filters.contact==='email'?'1px solid #236c50':'1px solid #dfe6dc',background:filters.contact==='email'?'#236c50':'#fff',color:filters.contact==='email'?'#fff':'#286d4d',fontWeight:600,padding:'4px 9px',borderRadius:6,fontSize:10,display:'inline-flex',alignItems:'center',gap:4}}
-                onClick={()=>setFilters({...filters,contact:filters.contact==='email'?'':'email'})}
+                style={{cursor:'pointer',border:filters.contact==='with_contact'?'1.5px solid #16a34a':'1px solid #bbf7d0',background:filters.contact==='with_contact'?'#16a34a':'#f0fdf4',color:filters.contact==='with_contact'?'#fff':'#166534',fontWeight:700,padding:'4px 9px',borderRadius:6,fontSize:10,display:'inline-flex',alignItems:'center',gap:4}}
+                onClick={()=>setFilters({...filters,contact:filters.contact==='with_contact'?'':'with_contact'})}
               >
-                <Mail size={11}/> Con Correo ({totalWithEmail.toLocaleString('es-PE')})
+                ✓ Con Canal Directo ({totalWithContact.toLocaleString('es-PE')})
               </button>
               <button 
                 type="button" 
-                style={{cursor:'pointer',border:filters.contact==='phone'?'1px solid #236c50':'1px solid #dfe6dc',background:filters.contact==='phone'?'#236c50':'#fff',color:filters.contact==='phone'?'#fff':'#205493',fontWeight:600,padding:'4px 9px',borderRadius:6,fontSize:10,display:'inline-flex',alignItems:'center',gap:4}}
+                style={{cursor:'pointer',border:filters.contact==='phone'?'1.5px solid #236c50':'1px solid #dfe6dc',background:filters.contact==='phone'?'#236c50':'#fff',color:filters.contact==='phone'?'#fff':'#205493',fontWeight:600,padding:'4px 9px',borderRadius:6,fontSize:10,display:'inline-flex',alignItems:'center',gap:4}}
                 onClick={()=>setFilters({...filters,contact:filters.contact==='phone'?'':'phone'})}
               >
                 <Phone size={11}/> Con WhatsApp / Tel. ({totalWithPhone.toLocaleString('es-PE')})
               </button>
               <button 
                 type="button" 
-                style={{cursor:'pointer',border:filters.contact==='both'?'1px solid #236c50':'1px solid #d4c185',background:filters.contact==='both'?'#236c50':'#fdfbf3',color:filters.contact==='both'?'#fff':'#85600c',fontWeight:700,padding:'4px 9px',borderRadius:6,fontSize:10,display:'inline-flex',alignItems:'center',gap:4}}
+                style={{cursor:'pointer',border:filters.contact==='email'?'1.5px solid #236c50':'1px solid #dfe6dc',background:filters.contact==='email'?'#236c50':'#fff',color:filters.contact==='email'?'#fff':'#286d4d',fontWeight:600,padding:'4px 9px',borderRadius:6,fontSize:10,display:'inline-flex',alignItems:'center',gap:4}}
+                onClick={()=>setFilters({...filters,contact:filters.contact==='email'?'':'email'})}
+              >
+                <Mail size={11}/> Con Correo ({totalWithEmail.toLocaleString('es-PE')})
+              </button>
+              <button 
+                type="button" 
+                style={{cursor:'pointer',border:filters.contact==='both'?'1.5px solid #d97706':'1px solid #fde68a',background:filters.contact==='both'?'#d97706':'#fefce8',color:filters.contact==='both'?'#fff':'#854d0e',fontWeight:700,padding:'4px 9px',borderRadius:6,fontSize:10,display:'inline-flex',alignItems:'center',gap:4}}
                 onClick={()=>setFilters({...filters,contact:filters.contact==='both'?'':'both'})}
               >
-                ★ Con Ambos (Correo + WhatsApp) ({totalWithBoth.toLocaleString('es-PE')})
+                ★ Con Ambos ({totalWithBoth.toLocaleString('es-PE')})
+              </button>
+              <button 
+                type="button" 
+                style={{cursor:'pointer',border:filters.contact==='no_contact'?'1.5px solid #64748b':'1px solid #e2e8f0',background:filters.contact==='no_contact'?'#64748b':'#f8fafc',color:filters.contact==='no_contact'?'#fff':'#475569',fontWeight:500,padding:'4px 9px',borderRadius:6,fontSize:10,display:'inline-flex',alignItems:'center',gap:4}}
+                onClick={()=>setFilters({...filters,contact:filters.contact==='no_contact'?'':'no_contact'})}
+              >
+                Sin datos de contacto ({totalWithoutContact.toLocaleString('es-PE')})
               </button>
             </div>
 
@@ -1635,11 +1653,13 @@ export default function CRM(){
                 onChange={e=>setFilters({...filters,contact:e.target.value})}
                 style={{fontWeight:filters.contact?600:400,borderColor:filters.contact?'#236c50':'#dfe7d9',background:filters.contact?'#f0f7f2':'#fcfdfa'}}
               >
-                <option value="">Contacto: Todos</option>
-                <option value="email">✉️ Con Correo ({totalWithEmail.toLocaleString('es-PE')})</option>
+                <option value="">Contacto: Todos ({companies.length.toLocaleString('es-PE')})</option>
+                <option value="with_contact">✓ Con Canal Directo ({totalWithContact.toLocaleString('es-PE')})</option>
                 <option value="phone">📞 Con WhatsApp / Tel. ({totalWithPhone.toLocaleString('es-PE')})</option>
+                <option value="email">✉️ Con Correo ({totalWithEmail.toLocaleString('es-PE')})</option>
                 <option value="both">⭐ Con Correo y WhatsApp (Ambos)</option>
                 <option value="web">🌐 Con Sitio Web ({totalWithWeb.toLocaleString('es-PE')})</option>
+                <option value="no_contact">⚠️ Sin datos de contacto ({totalWithoutContact.toLocaleString('es-PE')})</option>
               </select>
 
               <button className="textbutton" onClick={()=>{setFilters({country:'',region:'',province:'',district:'',sector:'',contact:'',stage:''});setQuery('');}}>Limpiar</button>
