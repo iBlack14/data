@@ -45,12 +45,18 @@ export default defineConfig(async ({ command }) => {
 
   return {
     server: {
-      ...(managedLinux
-        ? { host: "0.0.0.0", allowedHosts: ["terminal.local"] }
-        : {}),
-      ...(isCodexSeatbeltSandbox
-        ? { watch: { useFsEvents: false, usePolling: true } }
-        : {}),
+      host: "0.0.0.0",
+      port: 5173,
+      allowedHosts: true,
+      watch: {
+        ignored: [
+          '**/.wrangler/**',
+          '**/.whatsapp_session/**',
+          '**/backup_crm_records.json',
+          '**/*.sqlite*',
+          '**/.git/**'
+        ]
+      }
     },
     plugins: [
       vinext(),
@@ -88,5 +94,5 @@ export default defineConfig(async ({ command }) => {
           : {}),
       }),
     ],
-  };
+  } as any;
 });

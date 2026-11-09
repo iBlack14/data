@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useState,useMemo} from 'react';
 import ProspectPanel from './prospect-panel';
 import LocationFields from './location-fields';
 import {
@@ -1037,38 +1037,59 @@ export default function CRM(){
     }
   }
 
-  const filtered=companies.filter(r=>{
-    if(query){
-      const q=query.toLowerCase();
-      const text=[r.name,r.email,r.sector,r.city,r.district,r.province,r.region,r.phone,r.service].join(' ').toLowerCase();
-      if(!text.includes(q))return false;
+  const filtered = useMemo(() => {
+    return companies.filter(r => {
+      if(query){
+        const q=query.toLowerCase();
+        const text=[r.name,r.email,r.sector,r.city,r.district,r.province,r.region,r.phone,r.service].join(' ').toLowerCase();
+        if(!text.includes(q))return false;
+      }
+      if(filters.country&&r.country!==filters.country)return false;
+      if(filters.region&&r.region!==filters.region)return false;
+      if(filters.province&&r.province!==filters.province)return false;
+      if(filters.district&&r.district!==filters.district)return false;
+      if(filters.sector&&r.sector!==filters.sector)return false;
+      if(filters.stage&&r.stage!==filters.stage)return false;
+
+      // Filtros de canal de contacto
+      if(filters.contact==='with_contact'&&!r.email&&!r.phone&&!r.web)return false;
+      if(filters.contact==='no_contact'&&(r.email||r.phone||r.web))return false;
+      if(filters.contact==='email'&&!r.email)return false;
+      if(filters.contact==='phone'&&!r.phone)return false;
+      if(filters.contact==='both'&&(!r.email||!r.phone))return false;
+      if(filters.contact==='web'&&!r.web)return false;
+
+      return true;
+    });
+  }, [companies, query, filters]);
+
+  const options = (key: string) => {
+    return [...new Set(companies.filter(r => Object.entries(filters).every(([k, v]) => k === key || k === 'stage' || k === 'contact' || !v || r[k] === v)).map(r => r[key]).filter(Boolean))].sort();
+  };
+
+  const { totalWithContact, totalWithoutContact, totalWithEmail, totalWithPhone, totalWithBoth, totalWithWeb } = useMemo(() => {
+    let withContact = 0, withoutContact = 0, withEmail = 0, withPhone = 0, withBoth = 0, withWeb = 0;
+    for (let i = 0; i < companies.length; i++) {
+      const c = companies[i];
+      const hasEmail = Boolean(c.email);
+      const hasPhone = Boolean(c.phone);
+      const hasWeb = Boolean(c.web);
+      if (hasEmail || hasPhone || hasWeb) withContact++;
+      else withoutContact++;
+      if (hasEmail) withEmail++;
+      if (hasPhone) withPhone++;
+      if (hasEmail && hasPhone) withBoth++;
+      if (hasWeb) withWeb++;
     }
-    if(filters.country&&r.country!==filters.country)return false;
-    if(filters.region&&r.region!==filters.region)return false;
-    if(filters.province&&r.province!==filters.province)return false;
-    if(filters.district&&r.district!==filters.district)return false;
-    if(filters.sector&&r.sector!==filters.sector)return false;
-    if(filters.stage&&r.stage!==filters.stage)return false;
-
-    // Filtros de canal de contacto
-    if(filters.contact==='with_contact'&&!r.email&&!r.phone&&!r.web)return false;
-    if(filters.contact==='no_contact'&&(r.email||r.phone||r.web))return false;
-    if(filters.contact==='email'&&!r.email)return false;
-    if(filters.contact==='phone'&&!r.phone)return false;
-    if(filters.contact==='both'&&(!r.email||!r.phone))return false;
-    if(filters.contact==='web'&&!r.web)return false;
-
-    return true;
-  });
-
-  const options=(key:string)=>[...new Set(companies.filter(r=>Object.entries(filters).every(([k,v])=>k===key||k==='stage'||k==='contact'||!v||r[k]===v)).map(r=>r[key]).filter(Boolean))].sort();
-
-  const totalWithContact=companies.filter(r=>Boolean(r.email||r.phone||r.web)).length;
-  const totalWithoutContact=companies.filter(r=>!r.email&&!r.phone&&!r.web).length;
-  const totalWithEmail=companies.filter(r=>Boolean(r.email)).length;
-  const totalWithPhone=companies.filter(r=>Boolean(r.phone)).length;
-  const totalWithBoth=companies.filter(r=>Boolean(r.email&&r.phone)).length;
-  const totalWithWeb=companies.filter(r=>Boolean(r.web)).length;
+    return {
+      totalWithContact: withContact,
+      totalWithoutContact: withoutContact,
+      totalWithEmail: withEmail,
+      totalWithPhone: withPhone,
+      totalWithBoth: withBoth,
+      totalWithWeb: withWeb
+    };
+  }, [companies]);
 
   const pendingCount=companies.filter(r=>r.stage==='Nuevo').length;
   const contactedCount=companies.filter(r=>['Contactado','Reunión','Propuesta','Ganado'].includes(r.stage)).length;
