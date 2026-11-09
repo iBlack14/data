@@ -11,6 +11,7 @@ Selecciona resultados y usa **Guardar en Empresas**. La importación conserva ID
 ## Ejecución y verificación
 
 - `npm run dev`: inicia el CRM local en el puerto 5173 con la misma base D1 local.
+- `node scripts/prospect-lima.mjs --sector "tu rubro"`: ejecuta el barrido automático por terminal sobre los 43 distritos de Lima y guarda los CSVs en `outputs/lima/`.
 - `node --test tests/prospecting.test.mjs`: comprueba parsing, límites, bloqueo, correos y destinos privados sin acceder a empresas reales.
 - `node node_modules/typescript/bin/tsc --noEmit`: comprobación de tipos.
 

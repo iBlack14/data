@@ -1,10 +1,23 @@
-import { spawnSync } from "node:child_process";
+import { spawnSync, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { readExecutionProfile } from "./execution-profile.mjs";
 
 const [command, ...args] = process.argv.slice(2);
 if (!["dev", "build"].includes(command)) throw new Error("Expected dev or build.");
 const managedLinux = readExecutionProfile() === "managed-linux";
+
+if (command === "dev") {
+  const smtpScript = fileURLToPath(new URL("./smtp-service.mjs", import.meta.url));
+  const smtpBridge = spawn(process.execPath, [smtpScript], { stdio: 'inherit' });
+
+  const waScript = fileURLToPath(new URL("./whatsapp-service.mjs", import.meta.url));
+  const waBridge = spawn(process.execPath, [waScript], { stdio: 'inherit' });
+
+  process.on('exit', () => {
+    try { smtpBridge.kill(); } catch {}
+    try { waBridge.kill(); } catch {}
+  });
+}
 
 if (managedLinux && command === "build") {
   const result = spawnSync("bash", [

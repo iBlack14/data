@@ -1,0 +1,111 @@
+- generic [ref=f4e2]:
+  - complementary [ref=f4e3]:
+    - link "odiseacloud WORKSPACE COMERCIAL" [ref=f4e4] [cursor=pointer]:
+      - /url: "#"
+      - generic [ref=f4e8]:
+        - text: odiseacloud
+        - generic [ref=f4e9]: WORKSPACE COMERCIAL
+    - generic [ref=f4e10]:
+      - generic [ref=f4e11]: OC
+      - generic [ref=f4e12]:
+        - text: OdiseaCloud
+        - generic [ref=f4e13]: CRM · Espacio privado
+    - generic [ref=f4e15]: PRINCIPAL
+    - navigation [ref=f4e16]:
+      - button "Resumen" [ref=f4e17] [cursor=pointer]
+      - button "Empresas 0" [ref=f4e23] [cursor=pointer]:
+        - text: Empresas
+        - generic [ref=f4e28]: "0"
+      - button "Cotizaciones 1" [active] [ref=f4e29] [cursor=pointer]:
+        - text: Cotizaciones
+        - generic [ref=f4e33]: "1"
+      - button "Territorios" [ref=f4e34] [cursor=pointer]
+      - button "Campañas" [ref=f4e40] [cursor=pointer]
+      - button "Correos" [ref=f4e44] [cursor=pointer]
+      - button "WhatsApp" [ref=f4e48] [cursor=pointer]
+      - button "SUNAT" [ref=f4e51] [cursor=pointer]
+      - button "Servicios" [ref=f4e55] [cursor=pointer]
+    - generic [ref=f4e60]:
+      - generic [ref=f4e61]:
+        - generic [ref=f4e62]: ✦
+        - generic [ref=f4e63]: Conexiones que hacen crecer.
+        - paragraph [ref=f4e64]: Encuentra empresas. Construye relaciones. Abre oportunidades.
+      - generic [ref=f4e65]:
+        - generic [ref=f4e66]: O
+        - generic [ref=f4e67]:
+          - text: Equipo comercial
+          - generic [ref=f4e68]: OdiseaCloud
+  - main [ref=f4e70]:
+    - generic [ref=f4e71]:
+      - generic [ref=f4e72]:
+        - text: Workspace
+        - generic [ref=f4e75]: Cotizaciones
+      - generic [ref=f4e76]: Espacio privado
+    - generic [ref=f4e78]:
+      - generic [ref=f4e79]:
+        - generic [ref=f4e80]:
+          - generic [ref=f4e81]: ODISEACLOUD / COTIZACIONES
+          - heading "Propuestas y cotizaciones formales." [level=1] [ref=f4e193]
+          - paragraph [ref=f4e83]: Genera cotizaciones en Soles o Dólares y envíalas al instante por WhatsApp, correo corporativo o imprime en PDF.
+        - button "Nueva cotización" [ref=f4e194] [cursor=pointer]
+      - generic [ref=f4e195]:
+        - generic [ref=f4e196]:
+          - generic [ref=f4e197]:
+            - generic [ref=f4e198]: Total Cotizado
+            - strong [ref=f4e201]: S/. 1,770.00
+            - generic [ref=f4e202]: + $ 0.00 USD
+          - generic [ref=f4e204]:
+            - generic [ref=f4e205]: Cotizaciones Creadas
+            - strong [ref=f4e209]: "1"
+            - generic [ref=f4e210]: Historial acumulado
+          - generic [ref=f4e212]:
+            - generic [ref=f4e213]: Enviadas / Negociación
+            - strong [ref=f4e216]: "0"
+            - generic [ref=f4e217]: Propuestas activas
+          - generic [ref=f4e219]:
+            - generic [ref=f4e220]: Aprobadas / Ganadas
+            - strong [ref=f4e224]: "0"
+            - generic [ref=f4e225]: Proyectos confirmados
+        - generic [ref=f4e227]:
+          - generic [ref=f4e228]:
+            - generic [ref=f4e229]:
+              - heading "Historial de Cotizaciones" [level=3] [ref=f4e230]
+              - paragraph [ref=f4e231]: Cotizaciones emitidas a prospectos y clientes.
+            - generic [ref=f4e232]: 1 cotización
+          - table [ref=f4e234]:
+            - rowgroup [ref=f4e235]:
+              - row [ref=f4e236]:
+                - columnheader "CÓDIGO / FECHA" [ref=f4e237]
+                - columnheader "CLIENTE / EMPRESA" [ref=f4e238]
+                - columnheader "SERVICIOS INCLUIDOS" [ref=f4e239]
+                - columnheader "TOTAL" [ref=f4e240]
+                - columnheader "ESTADO" [ref=f4e241]
+                - columnheader "ACCIONES" [ref=f4e242]
+            - rowgroup [ref=f4e243]:
+              - row [ref=f4e244]:
+                - cell "PRUEBA-001 08/11/2026" [ref=f4e245]:
+                  - text: PRUEBA-001
+                  - generic [ref=f4e246]: 08/11/2026
+                - cell "Cliente de prueba editorial 📞 +51 900 000 000 ✉️ prueba@example.com" [ref=f4e247]:
+                  - generic [ref=f4e248]: Cliente de prueba editorial
+                  - generic [ref=f4e249]:
+                    - generic [ref=f4e250]: 📞 +51 900 000 000
+                    - generic [ref=f4e251]: ✉️ prueba@example.com
+                - cell "• Diseño y creación de páginas web" [ref=f4e252]
+                - cell "S/. 1,770.00 Inc. IGV" [ref=f4e255]:
+                  - text: S/. 1,770.00
+                  - generic [ref=f4e256]: Inc. IGV
+                - cell "Borrador" [ref=f4e257]:
+                  - combobox [ref=f4e258]:
+                    - option "Borrador" [selected]
+                    - option "Enviada"
+                    - option "En Negociación"
+                    - option "Aprobada (Ganada)"
+                    - option "Rechazada"
+                - cell [ref=f4e259]:
+                  - generic [ref=f4e260]:
+                    - button "Enviar por WhatsApp" [ref=f4e261] [cursor=pointer]
+                    - button "Enviar por Correo Corporativo" [ref=f4e264] [cursor=pointer]
+                    - button "Ver vista para Imprimir / PDF" [ref=f4e268] [cursor=pointer]
+                    - button "Editar cotización" [ref=f4e273] [cursor=pointer]
+                    - button "Eliminar cotización" [ref=f4e276] [cursor=pointer]

@@ -1,0 +1,65 @@
+[    5805ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:14337
+[    7111ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:5173/api/whatsapp/status:0
+[    7132ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:5173/api/records:0
+[    7132ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:5173/api/email/accounts:0
+[   36527ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:14337
+[   36787ms] [ERROR] TypeError: rows.filter is not a function
+    at CRM (http://127.0.0.1:5173/app/crm.tsx:791:25)
+    at Object.react_stack_bottom_frame (http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:12868:12)
+    at renderWithHooks (http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:4213:19)
+    at updateFunctionComponent (http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:5569:16)
+    at beginWork (http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:6140:20)
+    at runWithFiberInDEV (http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:851:66)
+    at performUnitOfWork (http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:8429:92)
+    at workLoopSync (http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:8325:37)
+    at renderRootSync (http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:8309:6)
+    at performWorkOnRoot (http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:7994:27) @ http://127.0.0.1:5173/@vite/client:509
+[   36789ms] [ERROR] The above error occurred in a React component:
+
+    at CRM (http://127.0.0.1:5173/app/crm.tsx:670:42)
+    at AwaitAppRenderDependencies [Server] (<anonymous>)
+    at PageInvoker [Server] (<anonymous>)
+    at BfcacheSlotBoundary (http://127.0.0.1:5173/node_modules/vinext/dist/shims/slot.js?v=b5e290fc:191:32)
+    at Slot (http://127.0.0.1:5173/node_modules/vinext/dist/shims/slot.js?v=b5e290fc:274:17)
+    at LayoutSegmentProvider (http://127.0.0.1:5173/node_modules/vinext/dist/shims/layout-segment-context.js?v=b5e290fc:41:34)
+    at RedirectErrorBoundary (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:63:3)
+    at RedirectBoundary (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:97:29)
+    at AppRouterScrollTargetInner (http://127.0.0.1:5173/node_modules/vinext/dist/shims/app-router-scroll.js?v=b5e290fc:83:34)
+    at AppRouterScrollTarget (http://127.0.0.1:5173/node_modules/vinext/dist/shims/app-router-scroll.js?v=b5e290fc:135:34)
+    at NotFoundBoundaryInner (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:185:3)
+    at NotFoundBoundary (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:221:29)
+    at Children (http://127.0.0.1:5173/node_modules/vinext/dist/shims/slot.js?v=b5e290fc:305:17)
+    at body (<anonymous>)
+    at html (<anonymous>)
+    at RootLayout [Server] (<anonymous>)
+    at AppComponentDependencyBarrier [Server] (<anonymous>)
+    at AwaitAppRenderDependencies [Server] (<anonymous>)
+    at BfcacheSlotBoundary (http://127.0.0.1:5173/node_modules/vinext/dist/shims/slot.js?v=b5e290fc:191:32)
+    at Slot (http://127.0.0.1:5173/node_modules/vinext/dist/shims/slot.js?v=b5e290fc:274:17)
+    at LayoutSegmentProvider (http://127.0.0.1:5173/node_modules/vinext/dist/shims/layout-segment-context.js?v=b5e290fc:41:34)
+    at ErrorBoundaryInner (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:107:3)
+    at ErrorBoundary (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:159:26)
+    at ErrorBoundaryInner (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:107:3)
+    at GlobalErrorBoundary (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:167:32)
+    at AwaitAppRenderDependencies [Server] (<anonymous>)
+    at BfcacheSlotBoundary (http://127.0.0.1:5173/node_modules/vinext/dist/shims/slot.js?v=b5e290fc:191:32)
+    at Slot (http://127.0.0.1:5173/node_modules/vinext/dist/shims/slot.js?v=b5e290fc:274:17)
+    at NavigationCommitSignal (http://127.0.0.1:5173/node_modules/vinext/dist/server/app-browser-navigation-controller.js?v=b5e290fc:232:36)
+    at RedirectErrorBoundary (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:63:3)
+    at RedirectBoundary (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:97:29)
+    at AppRouterRedirectBridge (http://127.0.0.1:5173/node_modules/vinext/dist/server/app-browser-entry.js?v=b5e290fc:464:36)
+    at DevRecoveryBoundary (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:313:3)
+    at AppRouterScrollCommitProvider (http://127.0.0.1:5173/node_modules/vinext/dist/shims/app-router-scroll.js?v=b5e290fc:129:42)
+    at ErrorBoundaryInner (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:107:3)
+    at GlobalErrorBoundary (http://127.0.0.1:5173/node_modules/vinext/dist/shims/error-boundary.js?v=b5e290fc:167:32)
+    at BrowserRoot (http://127.0.0.1:5173/node_modules/vinext/dist/server/app-browser-entry.js?v=b5e290fc:490:24) @ http://127.0.0.1:5173/@vite/client:509
+[   36855ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:5173/api/whatsapp/status:0
+[   36856ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:5173/api/email/accounts:0
+[   49690ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:14337
+[   49924ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:5173/api/email/accounts:0
+[   49938ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:5173/api/whatsapp/status:0
+[  266105ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:5173/api/email/accounts:0
+[  266105ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:5173/api/whatsapp/status:0
+[  278691ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://127.0.0.1:5173/node_modules/.vite/deps/react-dom_client.js?v=b5e290fc:14337
+[  278963ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:5173/api/email/accounts:0
+[  278979ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:5173/api/whatsapp/status:0
