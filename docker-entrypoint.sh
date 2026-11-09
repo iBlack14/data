@@ -16,6 +16,7 @@ fi
 
 # Asegurar permisos y directorios
 mkdir -p /app/.whatsapp_session
+rm -f /app/.vinext/dev/lock.json 2>/dev/null || true
 
 exec "$@"
 

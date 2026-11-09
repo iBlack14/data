@@ -34,6 +34,7 @@ EXPOSE 5173
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=5173
+ENV VINEXT_NO_DEV_LOCK=1
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["npm", "run", "dev"]
