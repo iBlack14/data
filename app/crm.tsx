@@ -1617,13 +1617,15 @@ export default function CRM(){
               >
                 ★ Con Ambos ({totalWithBoth.toLocaleString('es-PE')})
               </button>
-              <button 
-                type="button" 
-                style={{cursor:'pointer',border:filters.contact==='no_contact'?'1.5px solid #64748b':'1px solid #e2e8f0',background:filters.contact==='no_contact'?'#64748b':'#f8fafc',color:filters.contact==='no_contact'?'#fff':'#475569',fontWeight:500,padding:'4px 9px',borderRadius:6,fontSize:10,display:'inline-flex',alignItems:'center',gap:4}}
-                onClick={()=>setFilters({...filters,contact:filters.contact==='no_contact'?'':'no_contact'})}
-              >
-                Sin datos de contacto ({totalWithoutContact.toLocaleString('es-PE')})
-              </button>
+              {totalWithoutContact > 0 && (
+                <button 
+                  type="button" 
+                  style={{cursor:'pointer',border:filters.contact==='no_contact'?'1.5px solid #64748b':'1px solid #e2e8f0',background:filters.contact==='no_contact'?'#64748b':'#f8fafc',color:filters.contact==='no_contact'?'#fff':'#475569',fontWeight:500,padding:'4px 9px',borderRadius:6,fontSize:10,display:'inline-flex',alignItems:'center',gap:4}}
+                  onClick={()=>setFilters({...filters,contact:filters.contact==='no_contact'?'':'no_contact'})}
+                >
+                  Sin datos de contacto ({totalWithoutContact.toLocaleString('es-PE')})
+                </button>
+              )}
             </div>
 
             <div className="filters">
@@ -1659,7 +1661,7 @@ export default function CRM(){
                 <option value="email">✉️ Con Correo ({totalWithEmail.toLocaleString('es-PE')})</option>
                 <option value="both">⭐ Con Correo y WhatsApp (Ambos)</option>
                 <option value="web">🌐 Con Sitio Web ({totalWithWeb.toLocaleString('es-PE')})</option>
-                <option value="no_contact">⚠️ Sin datos de contacto ({totalWithoutContact.toLocaleString('es-PE')})</option>
+                {totalWithoutContact > 0 && <option value="no_contact">⚠️ Sin datos de contacto ({totalWithoutContact.toLocaleString('es-PE')})</option>}
               </select>
 
               <button className="textbutton" onClick={()=>{setFilters({country:'',region:'',province:'',district:'',sector:'',contact:'',stage:''});setQuery('');}}>Limpiar</button>
