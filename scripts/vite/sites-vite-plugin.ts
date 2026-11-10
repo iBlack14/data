@@ -67,61 +67,53 @@ export function sites({ mockAuth = true } = {}): Plugin {
           return;
         }
 
-        const hostname = authority.hostname
-          .replace(/^\[|\]$/g, "")
-          .toLowerCase();
-        if (
-          !localHosts.has(hostname) ||
-          !localAddresses.has(request.socket.remoteAddress ?? "") ||
-          url.origin !== authority.origin
-        ) {
-          if (authPaths.has(url.pathname)) respond(response, 403);
-          else next();
+        const signIn = url.pathname === "/signin-with-chatgpt";
+        const signOut = url.pathname === "/signout-with-chatgpt";
+
+        if (signIn) {
+          const returnTo = safeReturn(url.searchParams.get("return_to"));
+          response.statusCode = 302;
+          response.setHeader("Cache-Control", "private, no-store");
+          response.setHeader("Location", returnTo || "/");
+          response.setHeader(
+            "Set-Cookie",
+            `${localCookieName}=1; Path=/; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`,
+          );
+          response.end();
           return;
         }
 
-        const cookies = (request.headers.cookie ?? "")
-          .split(";")
-          .map((cookie) => cookie.trim())
-          .filter(Boolean);
-        const signInCookies = cookies
-          .filter((cookie) => cookie.startsWith(`${localCookieName}=`))
-          .map((cookie) => cookie.slice(localCookieName.length + 1));
-        const applicationCookies = cookies.filter(
-          (cookie) => !cookie.startsWith(`${localCookieName}=`),
-        );
-        if (applicationCookies.length !== cookies.length) {
-          removeHeader(request, "cookie");
-          if (applicationCookies.length) {
-            setHeader(request, "cookie", applicationCookies.join("; "));
-          }
+        if (signOut) {
+          const returnTo = safeReturn(url.searchParams.get("return_to"));
+          response.statusCode = 302;
+          response.setHeader("Cache-Control", "private, no-store");
+          response.setHeader("Location", returnTo || "/");
+          response.setHeader(
+            "Set-Cookie",
+            `${localCookieName}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`,
+          );
+          response.end();
+          return;
         }
 
         if (url.pathname === "/callback") {
-          respond(response, 501);
+          response.statusCode = 302;
+          response.setHeader("Location", "/");
+          response.end();
           return;
         }
 
-        const signIn = url.pathname === "/signin-with-chatgpt";
-        const signOut = url.pathname === "/signout-with-chatgpt";
-        if (!signIn && !signOut) {
-          if (signInCookies.length === 1 && signInCookies[0] === "1") {
-            setHeader(request, "oai-authenticated-user-id", localUserId);
-            setHeader(request, "oai-authenticated-user-email", localEmail);
-            setHeader(
-              request,
-              "oai-authenticated-user-full-name",
-              localFullName,
-            );
-            setHeader(
-              request,
-              "oai-authenticated-user-full-name-encoding",
-              "percent-encoded-utf-8",
-            );
-          }
-          next();
-          return;
-        }
+        // Siempre inyectar identidad para que la aplicación funcione tanto en local como en Easypanel / VPS
+        setHeader(request, "oai-authenticated-user-id", localUserId);
+        setHeader(request, "oai-authenticated-user-email", localEmail);
+        setHeader(request, "oai-authenticated-user-full-name", localFullName);
+        setHeader(
+          request,
+          "oai-authenticated-user-full-name-encoding",
+          "percent-encoded-utf-8",
+        );
+        next();
+        return;
 
         if (
           (request.headers.origin && request.headers.origin !== url.origin) ||

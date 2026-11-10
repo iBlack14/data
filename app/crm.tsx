@@ -1554,7 +1554,7 @@ export default function CRM(){
           )}
         </div>
 
-        {error&&<div className="notice error">{error} <a href="/signin-with-chatgpt?return_to=/" target="_top">Iniciar sesión</a> <button onClick={load}>Reintentar</button></div>}
+        {error&&<div className="notice error">{error} <button onClick={load}>Reintentar</button></div>}
         {loading&&<div className="notice">Cargando registros…</div>}
 
         {tab==='Resumen'&&<>

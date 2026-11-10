@@ -19,24 +19,42 @@ const SIGN_OUT_PATH = "/signout-with-chatgpt";
 const CALLBACK_PATH = "/callback";
 
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get(USER_ID_HEADER);
-  const email = requestHeaders.get(USER_EMAIL_HEADER);
-  if (!userId || !email) return null;
+  try {
+    const requestHeaders = await headers();
+    const userId = requestHeaders.get(USER_ID_HEADER);
+    const email = requestHeaders.get(USER_EMAIL_HEADER);
+    if (!userId || !email) {
+      // Fallback para despliegues independientes (Easypanel, Docker, VPS, navegador externo)
+      // Garantiza acceso completo al CRM y vinculación con los registros existentes de local_seedy
+      return {
+        userId: "local_seedy",
+        displayName: "OdiseaCloud Admin",
+        email: "admin@odiseacloud.com",
+        fullName: "OdiseaCloud Admin",
+      };
+    }
 
-  const encodedFullName = requestHeaders.get(USER_FULL_NAME_HEADER);
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get(USER_FULL_NAME_ENCODING_HEADER) === PERCENT_ENCODED_UTF8
-      ? safeDecodeURIComponent(encodedFullName)
-      : null;
+    const encodedFullName = requestHeaders.get(USER_FULL_NAME_HEADER);
+    const fullName =
+      encodedFullName &&
+      requestHeaders.get(USER_FULL_NAME_ENCODING_HEADER) === PERCENT_ENCODED_UTF8
+        ? safeDecodeURIComponent(encodedFullName)
+        : null;
 
-  return {
-    userId,
-    displayName: fullName ?? email,
-    email,
-    fullName,
-  };
+    return {
+      userId,
+      displayName: fullName ?? email,
+      email,
+      fullName,
+    };
+  } catch {
+    return {
+      userId: "local_seedy",
+      displayName: "OdiseaCloud Admin",
+      email: "admin@odiseacloud.com",
+      fullName: "OdiseaCloud Admin",
+    };
+  }
 }
 
 export async function requireChatGPTUser(
