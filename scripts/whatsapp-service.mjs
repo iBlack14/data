@@ -263,7 +263,16 @@ const server = http.createServer(async (req, res) => {
       }
       const jid = `${cleanDigits}@s.whatsapp.net`;
 
-      const result = await sock.sendMessage(jid, { text: message });
+      // Limpiar texto para evitar rombos \uFFFD, selectores \uFE0F y viñetas con asteriscos literales
+      let safeMsg = String(message)
+        .replace(/\uFFFD/g, '')
+        .replace(/\uFE0F/g, '')
+        .replace(/[📌📍]/g, '')
+        .replace(/^(\s*)[*-]\s+/gm, '$1• ')
+        .replace(/\*\*([^*]+)\*\*/g, '*$1*')
+        .trim();
+
+      const result = await sock.sendMessage(jid, { text: safeMsg, linkPreview: null });
       console.log(`[WhatsApp Sent]: to ${jid} id: ${result?.key?.id}`);
 
       return sendJson(res, 200, {

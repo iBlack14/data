@@ -13,12 +13,12 @@ export default function QuoteDocument({ quote: q, getSpecification }: {
 }) {
   const serviceName = (name: string) => name.replace(/🌐\s*/gu, '').trim();
   const money = (value: number) => new Intl.NumberFormat('es-PE', { style: 'currency', currency: q.currency === 'USD' ? 'USD' : 'PEN' }).format(value || 0);
-  const footer = <footer className="qd-footer"><span>OdiseaCloud · Lima, Perú</span><span>odiseacloud.com · contacto@odiseacloud.com · +51 972 984 305</span></footer>;
+  const footer = <footer className="qd-footer"><span>OdiseaCloud · Lima, Perú</span><span>odiseacloud.com · contacto@odiseacloud.com · +51 994 282 396</span></footer>;
   return <article className="quote-document">
     <header className="qd-header">
       <div><img className="qd-logo" src="/assets/images/logo.webp" alt="OdiseaCloud" />
         <div className="qd-business">Soluciones Digitales &amp; Infraestructura Cloud</div>
-        <p>odiseacloud.com · contacto@odiseacloud.com<br />Tel / WhatsApp: +51 972 984 305 · Lima, Perú</p>
+        <p>odiseacloud.com · contacto@odiseacloud.com<br />Tel / WhatsApp: +51 994 282 396 · Lima, Perú</p>
       </div>
       <div className="qd-reference"><span className="qd-label">Cotización comercial</span><strong>{q.code}</strong>
         <dl><div><dt>Emisión</dt><dd>{q.date}</dd></div><div><dt>Vigencia</dt><dd>{q.validityDays || 15} días</dd></div><div><dt>Estado</dt><dd>{q.status}</dd></div></dl>
@@ -42,7 +42,7 @@ export default function QuoteDocument({ quote: q, getSpecification }: {
       <div><h3>Cuentas de abono</h3><dl className="qd-terms qd-accounts">
         <div className="qd-bank"><dt><img className="qd-bank-bcp" src="/assets/images/bcp.svg" alt="BCP" width="58" height="16"/></dt><dd><div><strong>Soles</strong> · 191-98745612-0-45<br/>CCI: 002-191-009874561204-56</div><div><strong>Dólares</strong> · 191-98745612-1-46<br/>CCI: 002-191-009874561214-57</div></dd></div>
         <div className="qd-bank"><dt><img src="/assets/images/interbank.svg" alt="Interbank" width="76" height="16"/></dt><dd><strong>Soles</strong> · 200-3001458920<br/>CCI: 003-200-003001458920-12</dd></div>
-        <div className="qd-wallets"><dt><img src="/assets/images/yape.png" alt="Yape" width="26" height="26"/><img src="/assets/images/plin.png" alt="Plin" width="26" height="26"/></dt><dd>+51 972 984 305</dd></div><div className="qd-card-payments"><dt><img src="/assets/images/visa.png" alt="Visa" width="34" height="21"/><img src="/assets/images/mastercard.png" alt="Mastercard" width="34" height="24"/></dt><dd>Link de pago por pasarela</dd></div></dl></div>
+        <div className="qd-wallets"><dt><img src="/assets/images/yape.png" alt="Yape" width="26" height="26"/><img src="/assets/images/plin.png" alt="Plin" width="26" height="26"/></dt><dd>+51 994 282 396</dd></div><div className="qd-card-payments"><dt><img src="/assets/images/visa.png" alt="Visa" width="34" height="21"/><img src="/assets/images/mastercard.png" alt="Mastercard" width="34" height="24"/></dt><dd>Link de pago por pasarela</dd></div></dl></div>
     </section>
     {footer}
     <section className="qd-annex">

@@ -42,16 +42,59 @@ const empty={
   permissionEvidence:'',suppressed:false,notes:'',next:'',lastContact:''
 };
 
+function cleanWebDomain(url?: string): string {
+  if (!url) return '';
+  return url.replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/+$/, '');
+}
+
 function cleanWhatsAppText(text: string): string {
   if (!text) return '';
   return text
-    // Reemplaza negrita markdown **texto** por negrita nativa de WhatsApp *texto*
-    .replace(/\*\*([^*]+)\*\*/g, '*$1*')
-    // Elimina caracteres unicode corruptos o rombos de interrogación
+    // Elimina rombos de interrogación o caracteres unicode corruptos
     .replace(/\uFFFD/g, '')
     // Elimina el selector de variación emoji \uFE0F que causa rombos negros en navegadores y wa.me
     .replace(/\uFE0F/g, '')
+    // Elimina emojis como chincheta/pin propensos a corromperse en codificaciones URL
+    .replace(/[📌📍]/g, '')
+    // Convierte viñetas markdown (* item o - item) a viñetas limpias Unicode (• item)
+    // para evitar que WhatsApp muestre asteriscos literales
+    .replace(/^(\s*)[*-]\s+/gm, '$1• ')
+    // Reemplaza negrita markdown **texto** por negrita nativa de WhatsApp *texto*
+    .replace(/\*\*([^*]+)\*\*/g, '*$1*')
     .trim();
+}
+
+function extractAllPhones(company: Row): string[] {
+  if (!company) return [];
+  const list: string[] = [];
+  const seenDigits = new Set<string>();
+
+  const addPhone = (raw: string) => {
+    if (!raw) return;
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length >= 7 && !seenDigits.has(digits)) {
+      seenDigits.add(digits);
+      list.push(raw.trim());
+    }
+  };
+
+  // 1. Campo principal phone (puede venir con varios números separados por / o comas)
+  if (company.phone) {
+    String(company.phone)
+      .split(/[/,;\n]+/)
+      .forEach(addPhone);
+  }
+
+  // 2. Extraer teléfonos de las notas (ej: fichas unificadas)
+  if (company.notes) {
+    const regex = /(?:Tel[ée]fono|Telf|Celular|WA|WhatsApp)?\s*:?\s*(\+?51[\s-]?[0-9\s-]{8,14}|9\d{2}[\s-]?\d{3}[\s-]?\d{3}|0\d{1,2}[\s-]?\d{6,7})/gi;
+    let match;
+    while ((match = regex.exec(company.notes)) !== null) {
+      addPhone(match[1]);
+    }
+  }
+
+  return list;
 }
 
 const PITCH_TEMPLATES: any[] = [
@@ -62,21 +105,21 @@ const PITCH_TEMPLATES: any[] = [
     subject: (r?: Row) => `Mesa de Partes Virtual 24/7 y Gestión Documentaria Digital para ${r?.name||'{{empresa}}'}`,
     getMessage: (r: Row) => `Estimada Dirección / Equipo Directivo de ${r.name},
 
-Le saluda la división de Transformación Digital de OdiseaCloud. Nos comunicamos tras analizar los canales de atención y recepción documental de su entidad${r.web ? ` (${r.web})` : ''}.
+Le saluda la división de Transformación Digital de OdiseaCloud. Nos comunicamos tras analizar los canales de atención y recepción documental de su entidad${r.web ? ` (${cleanWebDomain(r.web)})` : ''}.
 
 Hoy en día, gestionar documentos, solicitudes y escritos a través de correos tradicionales o WhatsApp disperso ocasiona demoras operativas, riesgo de extravío y falta de constancia formal inmediata para los usuarios.
 
 Ponemos a su disposición nuestra plataforma corporativa de *Mesa de Partes Virtual & Portal de Trámites 24/7*, diseñada bajo los más altos estándares de seguridad y legalidad digital:
 
-📌 *1. Módulo de Recepción y Foliado Digital Autónomo:*
+*1. Módulo de Recepción y Foliado Digital Autónomo:*
 • Recepción documental ininterrumpida las 24 horas del día, los 365 días del año.
 • Generación automática e instantánea del Cargo de Recepción formal en PDF con número correlativo único de trámite, sellado de tiempo y código QR de validación inalterable.
 
-📌 *2. Portal de Consulta y Trazabilidad para Usuarios / Clientes:*
+*2. Portal de Consulta y Trazabilidad para Usuarios / Clientes:*
 • Consulta en línea del estado del trámite en tiempo real con DNI/RUC y código de expediente, reduciendo en más del 80% las llamadas y consultas a su personal.
 • Notificaciones automáticas por correo electrónico ante cada cambio de estado, observación o resolución emitida.
 
-📌 *3. Bandeja de Control Administrativo & Plazos:*
+*3. Bandeja de Control Administrativo & Plazos:*
 • Asignación ágil de expedientes al personal o área responsable con panel de control intuitivo.
 • Semáforo de vencimiento de plazos, alertas preventivas y almacenamiento seguro en Google Cloud bajo estrictos protocolos de confidencialidad y respaldo diario.
 
@@ -88,7 +131,7 @@ Atentamente,
 
 Dirección de Soluciones Cloud & Mesa de Partes Digital
 OdiseaCloud · Infraestructura & Software
-Tel / WhatsApp: +51 972 984 305
+Tel / WhatsApp: +51 994 282 396
 https://odiseacloud.com`
   },
   {
@@ -98,7 +141,7 @@ https://odiseacloud.com`
     subject: (r?: Row) => `Sistemas web y modernización digital para ${r?.name||'{{empresa}}'}`,
     getMessage: (r: Row) => `Estimado equipo de ${r.name},
 
-Le saluda el equipo de OdiseaCloud. Estuvimos revisando la presencia comercial de su empresa${r.web ? ` y su portal web (${r.web})` : ''}.
+Le saluda el equipo de OdiseaCloud. Estuvimos revisando la presencia comercial de su empresa${r.web ? ` y su portal web (${cleanWebDomain(r.web)})` : ''}.
 
 Nos especializamos en el desarrollo de sistemas web a medida, automatización y soluciones cloud para empresas y comercios. Queremos presentarles nuestras soluciones para complementar y potenciar sus operaciones actuales:
 
@@ -121,7 +164,7 @@ https://odiseacloud.com`
     subject: (r?: Row) => `Automatización comercial y atención por WhatsApp para ${r?.name||'{{empresa}}'}`,
     getMessage: (r: Row) => `Estimado equipo de ${r.name},
 
-Le saluda el equipo de OdiseaCloud. Notamos el importante flujo de consultas y clientes que atiende su empresa${r.web ? ` y su presencia digital (${r.web})` : ''}.
+Le saluda el equipo de OdiseaCloud. Notamos el importante flujo de consultas y clientes que atiende su empresa${r.web ? ` y su presencia digital (${cleanWebDomain(r.web)})` : ''}.
 
 Queremos presentarles nuestras soluciones de automatización comercial e integración para potenciar sus ventas y atención al cliente:
 
@@ -144,7 +187,7 @@ https://odiseacloud.com`
     subject: (r?: Row) => r?.web ? `Propuesta de modernización y rediseño web para ${r.name}` : `Propuesta de diseño web profesional para ${r?.name||'{{empresa}}'}`,
     getMessage: (r: Row) => r.web ? `Estimado equipo de ${r.name},
 
-Le saluda el equipo de OdiseaCloud. Estuvimos navegando en su sitio web (${r.web}) y valoramos su trayectoria comercial.
+Le saluda el equipo de OdiseaCloud. Estuvimos navegando en su sitio web (${cleanWebDomain(r.web)}) y valoramos su trayectoria comercial.
 
 Queremos presentarles una propuesta de modernización y optimización de su portal web:
 
@@ -618,6 +661,7 @@ function renderWithLinks(text:string){
 
 export default function CRM(){
   const [prospectOpen,setProspectOpen]=useState(false);
+  const [selectedPhone,setSelectedPhone]=useState('');
   const [tab,setTab]=useState('Resumen'),[rows,setRows]=useState<Row[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[toast,setToast]=useState(''),[query,setQuery]=useState(''),[filters,setFilters]=useState<Row>({country:'',region:'',province:'',district:'',sector:'',contact:'',stage:''}),[page,setPage]=useState(1),[pageSize,setPageSize]=useState(50),[editor,setEditor]=useState<Row|null>(null),[saving,setSaving]=useState(false),[selected,setSelected]=useState<Row|null>(null),[territory,setTerritory]=useState<Row>({country:'Perú',region:'Lima',province:'Lima',city:'Lima',district:'',sector:''}),[campaign,setCampaign]=useState<Row>({name:'Propuesta General',service:'',channel:'Correo',subject:'Propuesta de impulso digital para {{empresa}}',message:'Estimado equipo de {{empresa}},\n\nLe saluda el equipo de OdiseaCloud. Nos comunicamos porque estuvimos revisando su presencia digital y queremos presentarles soluciones tecnológicas a medida para potenciar su visibilidad y captación comercial (diseño y reestructuración web, correos corporativos y automatizaciones).\n\n¿Tendrían disponibilidad para una breve conversación esta semana?\n\nQuedamos atentos a sus comentarios.\n\nAtentamente,\nOdiseaCloud · Soluciones Digitales\nhttps://odiseacloud.com'}),[contactMessage,setContactMessage]=useState(''),[contactSubject,setContactSubject]=useState(''),[activeTemplateId,setActiveTemplateId]=useState('sistemas_mesa');
 
   // Email Accounts State
@@ -1136,6 +1180,8 @@ export default function CRM(){
 
   function startContact(r:Row,c?:Row){
     setSelected(r);
+    const phones = extractAllPhones(r);
+    setSelectedPhone(r.phone || phones[0] || '');
     if(c?.message){
       setContactSubject(c.subject ? c.subject.replaceAll('{{empresa}}', r.name) : `Propuesta para ${r.name}`);
       setContactMessage(cleanWhatsAppText(c.message.replaceAll('{{empresa}}', r.name)));
@@ -1338,8 +1384,9 @@ export default function CRM(){
     }
   }
 
-  async function sendDirectWhatsapp(company:Row){
-    if(!company.phone){
+  async function sendDirectWhatsapp(company:Row, targetPhone?: string){
+    const phoneToSend = targetPhone || selectedPhone || company.phone;
+    if(!phoneToSend){
       setToast('Esta empresa no tiene teléfono o WhatsApp registrado.');
       return;
     }
@@ -1349,7 +1396,7 @@ export default function CRM(){
       const r=await fetch('/api/whatsapp/send',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({companyId:company.id,phone:company.phone,message:cleanMsg})
+        body:JSON.stringify({companyId:company.id,phone:phoneToSend,message:cleanMsg})
       });
       const res:any=await r.json();
       if(!r.ok)throw new Error(res.error||'Error al enviar WhatsApp.');
@@ -1359,16 +1406,59 @@ export default function CRM(){
         lastContact:today,
         stage:'Contactado',
         contactedWhatsApp:true,
-        notes:company.notes?`${company.notes}\n[${today}] WhatsApp enviado a ${company.phone}`:`[${today}] WhatsApp enviado a ${company.phone}`
+        notes:company.notes?`${company.notes}\n[${today}] WhatsApp enviado a ${phoneToSend}`:`[${today}] WhatsApp enviado a ${phoneToSend}`
       };
       setSelected(updated);
-      setToast(`✅ ¡WhatsApp enviado exitosamente a ${company.name}!`);
+      setToast(`✅ ¡WhatsApp enviado exitosamente a ${phoneToSend}!`);
       await load();
     }catch(e:any){
       setToast(e.message||'Error al enviar por WhatsApp.');
     }finally{
       setSendingWa(false);
     }
+  }
+
+  async function sendToAllWhatsapp(company:Row, phoneList:string[]){
+    if(!phoneList || !phoneList.length) return;
+    setSendingWa(true);
+    const cleanMsg = cleanWhatsAppText(contactMessage);
+    let sentCount = 0;
+    const today = new Date().toISOString().slice(0,10);
+    const logList: string[] = [];
+
+    for (let i = 0; i < phoneList.length; i++) {
+      const ph = phoneList[i];
+      try {
+        const r = await fetch('/api/whatsapp/send',{
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({companyId: company.id, phone: ph, message: cleanMsg})
+        });
+        if (r.ok) {
+          sentCount++;
+          logList.push(`[${today}] WhatsApp enviado a ${ph}`);
+        }
+      } catch {}
+      if (i < phoneList.length - 1) {
+        await new Promise(res => setTimeout(res, 1200));
+      }
+    }
+
+    if (sentCount > 0) {
+      const updated = {
+        ...company,
+        lastContact: today,
+        stage: 'Contactado',
+        contactedWhatsApp: true,
+        notes: company.notes ? `${company.notes}\n${logList.join('\n')}` : logList.join('\n')
+      };
+      setSelected(updated);
+      setToast(`✅ ¡WhatsApp enviado a ${sentCount} de ${phoneList.length} teléfonos!`);
+      await load();
+    } else {
+      setToast('No se pudo enviar WhatsApp a los números especificados.');
+    }
+    setSendingWa(false);
   }
 
   async function markAsContacted(company:Row,via:string,closeModal=false){
@@ -2773,6 +2863,8 @@ export default function CRM(){
       const hasContactedWa = Boolean(selected.contactedWhatsApp || selected.contactedViaWhatsApp || notesLower.includes('whatsapp'));
       const hasContactedEmail = Boolean(selected.contactedEmail || notesLower.includes('correo') || notesLower.includes('email') || notesLower.includes('mail'));
       const isContacted = selected.stage === 'Contactado' || selected.stage === 'Reunión' || selected.stage === 'Propuesta' || selected.stage === 'Ganado' || Boolean(selected.lastContact);
+      const availablePhones = extractAllPhones(selected);
+      const activePhone = selectedPhone || selected.phone || availablePhones[0] || '';
 
       return <div className="modalback">
       <section className="modal detail" role="dialog" aria-modal="true" aria-label={selected.name}>
@@ -3026,23 +3118,85 @@ export default function CRM(){
           </div>
         )}
 
-        <div className="actions">
+        {/* Selector de Teléfonos Múltiples si se detectó más de 1 */}
+        {availablePhones.length > 1 && (
+          <div style={{background:'#f0fdf4',border:'1.5px solid #86efac',borderRadius:8,padding:'10px 14px',margin:'12px 0 14px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8,flexWrap:'wrap',gap:6}}>
+              <span style={{fontSize:11,fontWeight:700,color:'#166534',display:'inline-flex',alignItems:'center',gap:5}}>
+                <Phone size={13}/> Se detectaron {availablePhones.length} teléfonos para esta empresa:
+              </span>
+              <span style={{fontSize:10,color:'#15803d',fontWeight:500}}>
+                Pulsa en un número para seleccionarlo o usa los botones directos abajo
+              </span>
+            </div>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+              {availablePhones.map((ph, idx) => {
+                const active = activePhone === ph;
+                return (
+                  <button
+                    key={ph}
+                    type="button"
+                    onClick={() => setSelectedPhone(ph)}
+                    style={{
+                      border: active ? '1.5px solid #16a34a' : '1px solid #bbf7d0',
+                      background: active ? '#16a34a' : '#fff',
+                      color: active ? '#fff' : '#166534',
+                      fontWeight: active ? 700 : 500,
+                      padding: '5px 11px',
+                      borderRadius: 6,
+                      fontSize: 11,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5
+                    }}
+                  >
+                    <Phone size={11}/> {ph} {idx === 0 ? '(Principal)' : `(N° ${idx + 1})`}
+                    {active && ' ✓'}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="actions" style={{display:'flex',flexWrap:'wrap',gap:8}}>
           {/* Botón WhatsApp Directo (Opción A: Baileys) */}
-          {selected.phone&&whatsappStatus.connected&&(
-            <button 
-              type="button" 
-              className="primary" 
-              style={{
-                background: hasContactedWa ? '#16a34a' : '#25d366',
-                borderColor: '#1eb857'
-              }}
-              disabled={sendingWa||selected.suppressed||!contactMessage.trim()}
-              onClick={()=>sendDirectWhatsapp(selected)}
-              title="Enviar mensaje directo vía WhatsApp conectado"
-            >
-              {hasContactedWa ? <Check size={15}/> : <MessageCircle size={15}/>} 
-              {sendingWa?'Enviando WhatsApp…':hasContactedWa?'✓ WhatsApp ya enviado (Reenviar)':'Enviar WhatsApp directo'}
-            </button>
+          {activePhone && whatsappStatus.connected && (
+            <>
+              <button 
+                type="button" 
+                className="primary" 
+                style={{
+                  background: hasContactedWa ? '#16a34a' : '#25d366',
+                  borderColor: '#1eb857'
+                }}
+                disabled={sendingWa||selected.suppressed||!contactMessage.trim()}
+                onClick={()=>sendDirectWhatsapp(selected, activePhone)}
+                title={`Enviar mensaje directo vía WhatsApp a ${activePhone}`}
+              >
+                {hasContactedWa ? <Check size={15}/> : <MessageCircle size={15}/>} 
+                {sendingWa ? 'Enviando WhatsApp…' : availablePhones.length > 1 ? `Enviar WhatsApp directo a ${activePhone}` : 'Enviar WhatsApp directo'}
+              </button>
+
+              {availablePhones.length > 1 && (
+                <button 
+                  type="button" 
+                  className="button" 
+                  style={{
+                    background: '#ecfdf5',
+                    borderColor: '#10b981',
+                    color: '#047857',
+                    fontWeight: 700
+                  }}
+                  disabled={sendingWa||selected.suppressed||!contactMessage.trim()}
+                  onClick={()=>sendToAllWhatsapp(selected, availablePhones)}
+                  title={`Enviar automáticamente a los ${availablePhones.length} teléfonos detectados`}
+                >
+                  ⚡ Enviar a los {availablePhones.length} números a la vez
+                </button>
+              )}
+            </>
           )}
 
           {/* Botón Correo Directo (SMTP Corporativo) */}
@@ -3063,26 +3217,50 @@ export default function CRM(){
             </button>
           )}
 
-          {/* Botón WhatsApp Web (Opción B: wa.me sin vinculación) */}
-          <button 
-            type="button" 
-            className="button" 
-            style={{
-              background: hasContactedWa ? '#f0fdf4' : '#fff',
-              borderColor: hasContactedWa ? '#22c55e' : '#dfe7e1',
-              color: hasContactedWa ? '#15803d' : '#4b6255',
-              fontWeight: hasContactedWa ? 700 : 500
-            }}
-            disabled={!selected.phone||selected.suppressed} 
-            onClick={()=>{
-              const cleanMsg = cleanWhatsAppText(contactMessage);
-              window.open('https://wa.me/'+selected.phone.replace(/\D/g,'')+'?text='+encodeURIComponent(cleanMsg),'_blank','noopener,noreferrer');
-              markAsContacted(selected, 'WhatsApp Web', false);
-            }}
-          >
-            {hasContactedWa ? <Check size={15}/> : <MessageCircle size={15}/>} 
-            {hasContactedWa ? '✓ WhatsApp ya abierto (Volver a abrir)' : 'Abrir WhatsApp Web'}
-          </button>
+          {/* Botones WhatsApp Web (wa.me) */}
+          {availablePhones.length > 1 ? (
+            availablePhones.map((ph, idx) => (
+              <button 
+                key={ph}
+                type="button" 
+                className="button" 
+                style={{
+                  background: activePhone === ph ? '#f0fdf4' : '#fff',
+                  borderColor: activePhone === ph ? '#22c55e' : '#dfe7e1',
+                  color: activePhone === ph ? '#15803d' : '#4b6255',
+                  fontWeight: activePhone === ph ? 700 : 500
+                }}
+                disabled={selected.suppressed} 
+                onClick={()=>{
+                  const cleanMsg = cleanWhatsAppText(contactMessage);
+                  window.open('https://wa.me/'+ph.replace(/\D/g,'')+'?text='+encodeURIComponent(cleanMsg),'_blank','noopener,noreferrer');
+                  markAsContacted(selected, `WhatsApp Web (${ph})`, false);
+                }}
+              >
+                <MessageCircle size={14}/> Abrir WhatsApp Web: <b>{ph}</b>
+              </button>
+            ))
+          ) : (
+            <button 
+              type="button" 
+              className="button" 
+              style={{
+                background: hasContactedWa ? '#f0fdf4' : '#fff',
+                borderColor: hasContactedWa ? '#22c55e' : '#dfe7e1',
+                color: hasContactedWa ? '#15803d' : '#4b6255',
+                fontWeight: hasContactedWa ? 700 : 500
+              }}
+              disabled={!activePhone||selected.suppressed} 
+              onClick={()=>{
+                const cleanMsg = cleanWhatsAppText(contactMessage);
+                window.open('https://wa.me/'+activePhone.replace(/\D/g,'')+'?text='+encodeURIComponent(cleanMsg),'_blank','noopener,noreferrer');
+                markAsContacted(selected, 'WhatsApp Web', false);
+              }}
+            >
+              {hasContactedWa ? <Check size={15}/> : <MessageCircle size={15}/>} 
+              {hasContactedWa ? '✓ WhatsApp ya abierto (Volver a abrir)' : 'Abrir WhatsApp Web'}
+            </button>
+          )}
 
           {/* Botón Cliente Externo de Correo */}
           <button 
