@@ -238,7 +238,11 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
   async function api(path:string,body:Row,signal?:AbortSignal){
     const r=await fetch('/api/prospect/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal});
     const data=await r.json() as Row;
-    if(!r.ok)throw new Error(data.error||'No se pudo completar la operación.');
+    if(!r.ok){
+      const err = new Error(data.error||'No se pudo completar la operación.') as any;
+      err.status = r.status;
+      throw err;
+    }
     return data;
   }
 
@@ -477,14 +481,27 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
       } catch(err:any){
         if(abort.signal.aborted)break;
         const msg = err.message || 'Error en la consulta';
+        const errStatus = err.status || 502;
         setAutoHistory(prev=>[{district:targetLabel,count:0,downloaded:false,rows:[],error:msg},...prev]);
         setError(`Error en ${targetLabel}: ${msg}`);
         const message = `⚠️ Error en ${targetLabel}: ${msg}.`;
         setProgress(message);
         setAutoProgress(message);
-        if(msg.includes('429') || msg.includes('limitado')){
+
+        // Si Google aplica límite (429), CAPTCHA, o bloqueo de red
+        const isRateLimit = 
+          errStatus === 429 || 
+          errStatus === 502 || 
+          msg.includes('429') || 
+          msg.includes('limitado') || 
+          msg.includes('verificación') || 
+          msg.includes('CAPTCHA') || 
+          msg.includes('no permitió') ||
+          msg.includes('bloqueo');
+
+        if(isRateLimit){
           rateLimited = true;
-          const limitedMessage = `⚠️ Google aplicó un límite temporal en ${targetLabel}. Se detuvo el barrido preventivamente para cuidar tu IP.`;
+          const limitedMessage = `⚠️ Google aplicó un límite temporal o verificación de seguridad (429/502). El barrido se detuvo de inmediato para proteger tu IP. Espera unos minutos y usa el botón "Continuar barrido anterior" para retomar sin perder datos.`;
           setProgress(limitedMessage);
           setAutoProgress(limitedMessage);
           break;
