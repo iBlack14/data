@@ -216,25 +216,104 @@ OdiseaCloud · Soluciones Digitales
 https://odiseacloud.com`
   },
   {
-    id: 'seguridad_correo',
-    name: '🔒 Correos & Seguridad Cloud',
-    badge: 'Infraestructura',
-    subject: (r?: Row) => `Infraestructura de correos corporativos y seguridad cloud para ${r?.name||'{{empresa}}'}`,
-    getMessage: (r: Row) => `Estimado equipo de ${r.name},
+    id: 'correos_dominio_pro',
+    name: '📧 Correos Corporativos & Dominio',
+    badge: '★ Solución Pro',
+    subject: (r?: Row) => `Dominio oficial y correos corporativos profesionales para ${r?.name||'{{empresa}}'}`,
+    getMessage: (r: Row) => {
+      const isFree = /(site123|wixsite|weebly|wordpress\.com|blogspot|sites\.google|jimdo|canva\.site|mystrikingly)/i.test(r.web || '');
+      const hasWeb = Boolean(r.web && r.web.trim());
+      const domName = cleanWebDomain(r.web);
 
-Le saluda el equipo de OdiseaCloud. Para toda empresa comercial e institucional, la formalidad en la comunicación, la seguridad de la información y la entregabilidad de los correos son indispensables.
+      if (isFree) {
+        return `Estimada Gerencia / Dirección de ${r.name},
 
-Ponemos a su disposición nuestros servicios de infraestructura digital y seguridad:
+Le saluda la división de Infraestructura e Identidad Digital de OdiseaCloud. Estuvimos analizando la presencia digital de su empresa y notamos que actualmente utilizan una dirección web temporal (${domName}).
 
-• Correos corporativos profesionales con dominio propio (ej. contacto@suempresa.com) con alta reputación (garantizando que sus cotizaciones y correos lleguen a bandeja de entrada y no a SPAM).
-• Protocolos de seguridad SSL/TLS, cifrado y respaldo periódico en la nube de información comercial y archivos de clientes.
-• Servidores Cloud rápidos y almacenamiento seguro para copias de seguridad de sus sistemas.
+Para una empresa con su prestigio y trayectoria comercial, transmitir máxima solidez ante clientes, bancos, proveedores y licitaciones requiere una identidad digital propia. Ponemos a su disposición nuestra solución corporativa de *Dominio Oficial y Correos Corporativos Pro*:
 
-¿Les gustaría agendar una breve consulta de 10 minutos para evaluar la infraestructura digital de su empresa sin costo?
+*1. Dominio Propio Oficial e Institucional (.com / .com.pe / .pe):*
+• Titularidad y registro 100% a nombre de su empresa, eliminando extensiones temporales y proyectando una imagen de primera categoría.
+• Certificado de Seguridad SSL/TLS de alta gama con candado de seguridad para máxima protección de sus clientes.
+
+*2. Correos Corporativos de Alta Reputación (@suempresa.com):*
+• Cuentas formales para sus áreas clave: ventas@, gerencia@, administracion@, operaciones@.
+• Configuración avanzada de protocolos anti-SPAM (SPF, DKIM y DMARC): garantizamos que sus cotizaciones, propuestas y facturas lleguen siempre a la Bandeja de Entrada de sus clientes y nunca a correos no deseados.
+• Acceso multidispositivo: sincronización total con celulares (Android / iPhone), Outlook corporativo y Webmail institucional en la nube 24/7.
+
+*3. Imagen & Confianza Inmediata:*
+• Deje atrás el uso de cuentas gratuitas (@gmail.com o @hotmail.com) y asegure que cada comunicación transmita el nivel y respaldo que su empresa merece.
+
+¿Podríamos coordinar una breve llamada de 10 minutos esta semana para mostrarles el paquete corporativo y validar la disponibilidad del dominio oficial de su empresa?
+
+Agradecemos de antemano su atención.
 
 Atentamente,
-OdiseaCloud · Soluciones Digitales
-https://odiseacloud.com`
+
+Área de Infraestructura & Identidad Digital
+OdiseaCloud · Soluciones Cloud
+Tel / WhatsApp: +51 994 282 396
+https://odiseacloud.com`;
+      }
+
+      if (hasWeb) {
+        return `Estimada Gerencia / Dirección de ${r.name},
+
+Le saluda la división de Infraestructura e Identidad Digital de OdiseaCloud. Estuvimos revisando el portal web de su empresa (${domName}) y su trayectoria comercial.
+
+Muchas empresas con sitio web activo aún gestionan sus cotizaciones desde correos genéricos (@gmail.com o @hotmail.com) o experimentan problemas de correos corporativos que caen en la bandeja de SPAM debido a configuraciones de servidor desactualizadas.
+
+Ponemos a su disposición nuestro servicio corporativo de *Correos Profesionales con Dominio Propio & Máxima Entregabilidad*:
+
+*1. Correos Corporativos de Alto Rendimiento (@${domName.replace(/^www\./i,'')}):*
+• Cuentas oficiales para cada integrante y departamento: ventas@, gerencia@, cotizaciones@.
+• Servidores ultra rápidos con alta reputación IP para asegurar que ningún presupuesto o factura se pierda en carpetas de correo no deseado.
+
+*2. Blindaje Anti-SPAM y Seguridad Empresarial:*
+• Autenticación estricta SPF, DKIM y registros DMARC para evitar suplantaciones de identidad (phishing) de su empresa.
+• Certificados SSL de última generación y cifrado de comunicaciones extremo a extremo.
+
+*3. Acceso Flexible y Soporte Dedicado:*
+• Configuración completa en sus teléfonos móviles, tablets y computadoras (Outlook, Thunderbird, Webmail Cloud).
+• Panel de administración propio para crear, suspender o reasignar correos al cambiar de colaboradores.
+
+¿Les gustaría agendar una breve consulta virtual de 10 minutos esta semana para evaluar la infraestructura de correos de su empresa sin costo?
+
+Atentamente,
+
+Área de Infraestructura & Identidad Digital
+OdiseaCloud · Soluciones Cloud
+Tel / WhatsApp: +51 994 282 396
+https://odiseacloud.com`;
+      }
+
+      return `Estimada Gerencia / Dirección de ${r.name},
+
+Le saluda la división de Infraestructura e Identidad Digital de OdiseaCloud. Notamos el importante posicionamiento y valoraciones comerciales de su empresa en Google Maps, pero identificamos que aún no cuentan con un dominio propio oficial ni correos corporativos institucionales.
+
+Hoy en día, más del 85% de clientes corporativos y proveedores exigen correos formales antes de emitir órdenes de compra o transferir adelantos. Queremos presentarles nuestra solución completa de *Dominio Propio y Correos Corporativos Pro*:
+
+*1. Dominio Oficial Registrado (.com / .com.pe / .pe):*
+• Dominio exclusivo a nombre de su empresa para proteger su marca comercial en internet.
+• Enlace institucional oficial para compartir en tarjetas de presentación, firmas de WhatsApp y facturas.
+
+*2. Cuentas de Correo Corporativas Profesionales (@suempresa.com):*
+• Correos formales para su equipo: ventas@, administracion@, gerencia@, facturacion@.
+• Servidores de alta reputación garantizada: sus mensajes y cotizaciones llegan directo a la bandeja principal de sus clientes.
+• Configuración lista para usar en celulares (Android / iPhone) y computadoras con almacenamiento seguro en la nube.
+
+*3. Imagen & Confianza Inmediata:*
+• Deje atrás el uso de correos gratuitos (@gmail.com o @hotmail.com) y transmita el nivel de solidez que su negocio merece.
+
+¿Tendrían disponibilidad para una breve llamada o demo de 10 minutos esta semana para validar la disponibilidad del dominio de su empresa?
+
+Atentamente,
+
+Área de Infraestructura & Identidad Digital
+OdiseaCloud · Soluciones Cloud
+Tel / WhatsApp: +51 994 282 396
+https://odiseacloud.com`;
+    }
   },
   {
     id: 'catalogo_ventas',
@@ -301,8 +380,8 @@ const DEFAULT_QUOTE_SERVICES = [
     priceUSD: 400
   },
   {
-    name: '🔒 Correos Corporativos & Blindaje Cloud',
-    detail: 'Configuración de correos corporativos en dominio propio con alta reputación (garantía de no caer en SPAM), certificados de seguridad SSL/TLS y respaldo periódico en la nube.',
+    name: '📧 Correos Corporativos & Dominio Oficial',
+    detail: 'Registro y gestión de dominio propio (.com / .com.pe) con correos corporativos institucionales (@suempresa.com), protocolos anti-SPAM (SPF, DKIM, DMARC), certificados SSL/TLS y sincronización multidispositivo.',
     pricePEN: 650,
     priceUSD: 180
   },
