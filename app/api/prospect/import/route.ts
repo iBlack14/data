@@ -18,8 +18,8 @@ export async function POST(request:Request) {
       if(known.has(r.mapsId)){duplicates++;continue;}
       const territory=r.searchTerritory;
       const clean:Record<string,any>={};
-      for(const k of ['name','sector','mapsId','placeId','address','phone','web','email','rating','reviewCount','source','extractedAt','searchTerritory','emailSources','emails','emailStatus','emailCheckedAt']) if(r[k]!==undefined)clean[k]=r[k];
-      const data={...clean,country:territory.country,region:territory.region||'',province:territory.province||'',city:territory.city||'',district:territory.district||'',locationOrigin:'search',verified:'',stage:'Nuevo',service:body.service||'Diseño y creación de páginas web',permissionEmail:false,permissionWhatsApp:false,permissionEvidence:'',suppressed:false,next:'',lastContact:'',notes:'Importado desde Google Maps. La ubicación administrativa corresponde al territorio consultado; confirmar contra la dirección de la ficha. Extracción: '+r.extractedAt};
+      for(const k of ['name','sector','mapsId','placeId','address','phone','web','email','rating','reviewCount','latitude','longitude','source','extractedAt','searchTerritory','emailSources','emails','emailStatus','emailCheckedAt']) if(r[k]!==undefined)clean[k]=r[k];
+      const data={...clean,country:territory.country,region:territory.region||'',province:territory.province||'',city:territory.city||'',district:territory.district||'',locality:territory.locality||'',locationOrigin:'search',verified:new Date().toISOString().slice(0,10),stage:'Nuevo',service:body.service||'Diseño y creación de páginas web',permissionEmail:false,permissionWhatsApp:false,permissionEvidence:'',suppressed:false,next:'',lastContact:'',notes:`Importado desde Google Maps${territory.locality?` (${territory.locality})`:''}. Ubicación administrativa: ${territory.district||''}, ${territory.province||''}, ${territory.region||''}. Extracción: ${r.extractedAt}`};
       incoming.push({id:user.userId+':maps:'+r.mapsId,owner:user.userId,kind:'company',data:JSON.stringify(data),updated:new Date().toISOString()});
       known.add(r.mapsId);
     }

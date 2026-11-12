@@ -1,8 +1,16 @@
 'use client';
 import {useRef,useState} from 'react';
 import LocationFields from './location-fields';
-import {Search,Download,ExternalLink,Mail,LoaderCircle,Square,X,MapPin,Zap,CheckCircle2,FileSpreadsheet,Globe} from 'lucide-react';
+import {Search,Download,ExternalLink,Mail,LoaderCircle,Square,X,MapPin,Zap,CheckCircle2,FileSpreadsheet,Globe,Pause,Play,RotateCcw} from 'lucide-react';
 import PE_REGIONS_DATA from '../public/geography/PE.json';
+import {
+  TargetLocation,
+  buildLocationQueue,
+  buildNationalQueue,
+  isDuplicateRecord,
+  registerSeenRecord,
+  cleanPhone
+} from '../lib/peru-localities';
 
 type Row=Record<string,any>;
 
@@ -15,12 +23,6 @@ type GeoRegion = {
   name: string;
   cities: string[];
   provinces: GeoProvince[];
-};
-
-type TargetLocation = {
-  region: string;
-  province: string;
-  district: string;
 };
 
 const LIMA_DISTRICTS = [
@@ -88,7 +90,11 @@ const TOP_PERU_TARGETS: TargetLocation[] = [
 
 function downloadRowsCSV(rows: Row[], sector: string, districtName: string, prefix = 'prospectos') {
   if (!rows || !rows.length) return;
-  const headers = ['Empresa', 'Rubro', 'País', 'Región', 'Provincia', 'Ciudad', 'Distrito', 'Correo', 'Teléfono', 'Dirección', 'Web', 'Calificación', 'Reseñas', 'Fuente Google Maps', 'Fecha Extracción'];
+  const headers = [
+    'Empresa', 'Rubro', 'País', 'Región', 'Provincia', 'Ciudad', 'Distrito', 'Localidad / Centro Poblado',
+    'Correo', 'Teléfono', 'Dirección', 'Web', 'Latitud', 'Longitud', 'Calificación', 'Reseñas',
+    'Fuente Google Maps', 'Fecha Extracción'
+  ];
 
   const csvRows = [
     headers,
@@ -100,10 +106,13 @@ function downloadRowsCSV(rows: Row[], sector: string, districtName: string, pref
       r.searchTerritory?.province || r.province || '',
       r.searchTerritory?.city || r.city || '',
       r.searchTerritory?.district || r.district || districtName || '',
+      r.searchTerritory?.locality || r.locality || '',
       r.email || (Array.isArray(r.emails) && r.emails[0]) || '',
       r.phone || '',
       r.address || '',
       r.web || '',
+      r.latitude !== null && r.latitude !== undefined ? String(r.latitude) : '',
+      r.longitude !== null && r.longitude !== undefined ? String(r.longitude) : '',
       r.rating !== null && r.rating !== undefined ? String(r.rating) : '',
       r.reviewCount !== null && r.reviewCount !== undefined ? String(r.reviewCount) : '',
       r.source || '',
@@ -157,12 +166,17 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
 
   // Estados del barrido automático multirregional (Todo el Perú)
   const [autoScope,setAutoScope]=useState<'province'|'national'>('province');
+  const [nationalType,setNationalType]=useState<'all'|'top'>('all');
   const [autoRegion,setAutoRegion]=useState<string>('Lima');
   const [autoProvince,setAutoProvince]=useState<string>('Lima');
   const [autoDistricts,setAutoDistricts]=useState<string[]>(LIMA_DISTRICTS);
+  const [includeLocalities,setIncludeLocalities]=useState<boolean>(true);
   const [autoNationalTargets,setAutoNationalTargets]=useState<TargetLocation[]>(TOP_PERU_TARGETS);
 
   const [autoRunning,setAutoRunning]=useState(false);
+  const [autoPaused,setAutoPaused]=useState(false);
+  const [hasInterruptedSweep,setHasInterruptedSweep]=useState(false);
+  const [interruptedTarget,setInterruptedTarget]=useState<string>('');
   const [autoDelay,setAutoDelay]=useState(5);
   const [autoDownloadCSV,setAutoDownloadCSV]=useState(false);
   const [countdown,setCountdown]=useState<number|null>(null);
@@ -170,6 +184,13 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
   const [autoAccumulated,setAutoAccumulated]=useState<Row[]>([]);
   const [autoProgress,setAutoProgress]=useState('');
   const [autoSector,setAutoSector]=useState('');
+
+  const pauseRef = useRef<boolean>(false);
+  const queueRef = useRef<TargetLocation[]>([]);
+  const currentIndexRef = useRef<number>(0);
+  const seenMapsIdsRef = useRef<Set<string>>(new Set());
+  const seenPhonesRef = useRef<Set<string>>(new Set());
+  const seenNamesRef = useRef<Set<string>>(new Set());
 
   const peRegions = PE_REGIONS_DATA as unknown as GeoRegion[];
   const currentRegionData = peRegions.find(r => r.name.toLowerCase() === autoRegion.toLowerCase()) || peRegions.find(r => r.name === 'Lima') || peRegions[0];
@@ -274,48 +295,103 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
     }
   }
 
-  async function runAutoSweep(){
+  function handlePauseSweep() {
+    pauseRef.current = true;
+    setAutoPaused(true);
+    const msg = '⏸️ Barrido pausado. Haz clic en Reanudar para continuar sin perder resultados acumulados.';
+    setProgress(msg);
+    setAutoProgress(msg);
+  }
+
+  function handleResumeSweep() {
+    pauseRef.current = false;
+    setAutoPaused(false);
+    const msg = '▶️ Reanudando barrido…';
+    setProgress(msg);
+    setAutoProgress(msg);
+  }
+
+  function handleStopSweep() {
+    controller.current?.abort();
+    pauseRef.current = false;
+    setAutoPaused(false);
+  }
+
+  async function runAutoSweep(resume = false){
     if(!territory.sector?.trim()){
       setError('Indica el rubro o actividad que deseas prospectar (ej. clínicas dentales, restaurantes, transportes).');
       return;
     }
 
     let queue: TargetLocation[] = [];
-    if(autoScope==='province'){
-      if(!autoDistricts.length){
-        setError(`Selecciona al menos un distrito de ${autoProvince} (${autoRegion}) para iniciar.`);
-        return;
-      }
-      queue = autoDistricts.map(d=>({
-        region: autoRegion,
-        province: autoProvince,
-        district: d
-      }));
+    if(resume && queueRef.current.length > 0){
+      queue = queueRef.current;
     } else {
-      if(!autoNationalTargets.length){
-        setError('Selecciona al menos una ciudad o distrito del Perú para iniciar el barrido nacional.');
-        return;
+      if(autoScope==='province'){
+        if(!autoDistricts.length){
+          setError(`Selecciona al menos un distrito de ${autoProvince} (${autoRegion}) para iniciar.`);
+          return;
+        }
+        const base = autoDistricts.map(d=>({
+          region: autoRegion,
+          province: autoProvince,
+          district: d
+        }));
+        queue = buildLocationQueue(base, includeLocalities);
+      } else {
+        if(nationalType === 'all'){
+          queue = buildNationalQueue(peRegions, includeLocalities);
+        } else {
+          queue = buildLocationQueue(autoNationalTargets, includeLocalities);
+        }
       }
-      queue = [...autoNationalTargets];
+
+      queueRef.current = queue;
+      currentIndexRef.current = 0;
+      seenMapsIdsRef.current = new Set(companies.map(c=>c.mapsId).filter(Boolean));
+      seenPhonesRef.current = new Set(companies.map(c=>cleanPhone(c.phone)).filter(p=>p.length>=7));
+      seenNamesRef.current = new Set();
+      setResults([]);
+      setAutoHistory([]);
+      setAutoAccumulated([]);
+    }
+
+    if(!queue.length){
+      setError('No se encontraron ubicaciones geográficas para el barrido seleccionado.');
+      return;
     }
 
     setError('');
     setAutoRunning(true);
-    setResults([]);
-    setAutoHistory([]);
-    setAutoAccumulated([]);
+    setAutoPaused(false);
+    pauseRef.current = false;
+    setHasInterruptedSweep(false);
+
     const abort=new AbortController();
     controller.current=abort;
 
     const sectorName = territory.sector.trim();
     let rateLimited = false;
     setAutoSector(sectorName);
-    setAutoProgress(`Preparando barrido de ${queue.length} localidades en Perú…`);
 
-    for(let i=0;i<queue.length;i++){
+    const startIndex = resume ? currentIndexRef.current : 0;
+    setAutoProgress(resume
+      ? `Reanudando barrido en ubicación ${startIndex + 1} de ${queue.length}…`
+      : `Preparando barrido inteligente de ${queue.length} zonas/localidades en el Perú…`
+    );
+
+    for(let i=startIndex; i<queue.length; i++){
+      currentIndexRef.current = i;
+
+      // Esperar si está pausado
+      while(pauseRef.current){
+        if(abort.signal.aborted)break;
+        await new Promise(res=>setTimeout(res, 400));
+      }
       if(abort.signal.aborted)break;
+
       const target = queue[i];
-      const targetLabel = `${target.district} (${target.region})`;
+      const targetLabel = target.label || `${target.locality ? target.locality + ' [C.P.] ' : ''}${target.district} (${target.province}, ${target.region})`;
       const districtProgress = `[${i+1}/${queue.length}] ${targetLabel}`;
       setProgress(`${districtProgress}: Consultando Google Maps…`);
       setAutoProgress(`${districtProgress}: Consultando Google Maps…`);
@@ -326,6 +402,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
         province: target.province,
         city: target.province,
         district: target.district,
+        locality: target.locality || '',
         sector: sectorName,
         offset: 0
       };
@@ -333,14 +410,24 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
       let districtResults: Row[] = [];
       try {
         const data = await api('search', input, abort.signal);
-        districtResults = data.results || [];
+        const rawResults = data.results || [];
+
+        // Deduplicación en tiempo real (evita empresas duplicadas entre distritos/centros poblados)
+        const uniqueResults: Row[] = [];
+        for (const item of rawResults) {
+          if (!isDuplicateRecord(item, seenMapsIdsRef.current, seenPhonesRef.current, seenNamesRef.current)) {
+            registerSeenRecord(item, seenMapsIdsRef.current, seenPhonesRef.current, seenNamesRef.current);
+            uniqueResults.push(item);
+          }
+        }
+        districtResults = uniqueResults;
 
         if(withEmails && districtResults.length && !abort.signal.aborted){
-          setProgress(`${districtProgress}: Buscando correos en webs…`);
+          setProgress(`${districtProgress}: Buscando correos en webs (${districtResults.length} empresas)…`);
           setAutoProgress(`${districtProgress}: Buscando correos en webs…`);
           const pending = districtResults.filter(r=>r.web);
           for(let j=0;j<pending.length;j+=3){
-            if(abort.signal.aborted)break;
+            if(abort.signal.aborted || pauseRef.current)break;
             await Promise.all(pending.slice(j,j+3).map(async r=>{
               try{
                 const info=await api('enrich',{web:r.web},abort.signal);
@@ -351,16 +438,19 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
         }
 
         if(districtResults.length > 0){
-          if(autoDownloadCSV)downloadRowsCSV(districtResults, sectorName, `${target.region}_${target.district}`, 'prospectos');
+          if(autoDownloadCSV) {
+            const fileLoc = target.locality ? `${target.district}_${target.locality}` : target.district;
+            downloadRowsCSV(districtResults, sectorName, `${target.region}_${target.province}_${fileLoc}`, 'prospectos');
+          }
           setAutoHistory(prev=>[{district:targetLabel,count:districtResults.length,downloaded:autoDownloadCSV,rows:districtResults},...prev]);
           setAutoAccumulated(prev=>[...prev,...districtResults]);
           setResults(prev=>[...districtResults,...prev.filter(r=>!districtResults.some(d=>d.mapsId===r.mapsId))]);
-          const message = `✅ ${districtProgress}: ${districtResults.length} empresas extraídas${autoDownloadCSV?' · CSV descargado':''}`;
+          const message = `✅ ${districtProgress}: ${districtResults.length} empresas únicas extraídas${autoDownloadCSV?' · CSV descargado':''}`;
           setProgress(message);
           setAutoProgress(message);
         } else {
           setAutoHistory(prev=>[{district:targetLabel,count:0,downloaded:false,rows:[]} ,...prev]);
-          const message = `⚪ ${districtProgress}: 0 empresas encontradas.`;
+          const message = `⚪ ${districtProgress}: 0 nuevas empresas encontradas.`;
           setProgress(message);
           setAutoProgress(message);
         }
@@ -369,9 +459,15 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
         if(i < queue.length - 1 && !abort.signal.aborted){
           for(let s=autoDelay; s>0; s--){
             if(abort.signal.aborted)break;
+            while(pauseRef.current){
+              if(abort.signal.aborted)break;
+              await new Promise(res=>setTimeout(res, 400));
+            }
+            if(abort.signal.aborted)break;
             setCountdown(s);
             const nextTarget = queue[i+1];
-            const message = `⏳ Siguiente: ${nextTarget.district} (${nextTarget.region}) en ${s}s para evitar bloqueos de Google…`;
+            const nextLabel = nextTarget.label || `${nextTarget.district} (${nextTarget.region})`;
+            const message = `⏳ Siguiente: ${nextLabel} en ${s}s (Pausa de seguridad)…`;
             setProgress(message);
             setAutoProgress(message);
             await new Promise(res=>setTimeout(res,1000));
@@ -388,7 +484,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
         setAutoProgress(message);
         if(msg.includes('429') || msg.includes('limitado')){
           rateLimited = true;
-          const limitedMessage = `⚠️ Google aplicó un límite temporal en ${targetLabel}. Se detuvo el barrido preventivamente.`;
+          const limitedMessage = `⚠️ Google aplicó un límite temporal en ${targetLabel}. Se detuvo el barrido preventivamente para cuidar tu IP.`;
           setProgress(limitedMessage);
           setAutoProgress(limitedMessage);
           break;
@@ -399,17 +495,26 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
 
     setCountdown(null);
     setAutoRunning(false);
+    setAutoPaused(false);
+    pauseRef.current = false;
     controller.current=null;
-    if(!rateLimited&&!abort.signal.aborted){
-      const message = autoDownloadCSV
-        ?'🎉 Barrido completado. Los CSVs de cada localidad están en tu carpeta de descargas.'
-        :'🎉 Barrido completado. Los resultados están disponibles para descargar en un solo CSV o guardar en Empresas.';
-      setProgress(message);
-      setAutoProgress(message);
-    } else if(abort.signal.aborted) {
+
+    if(abort.signal.aborted || rateLimited){
+      if(currentIndexRef.current < queue.length - 1){
+        setHasInterruptedSweep(true);
+        const lastTarget = queue[currentIndexRef.current];
+        setInterruptedTarget(lastTarget?.label || `${lastTarget?.district} (${lastTarget?.region})`);
+      }
       const message = autoDownloadCSV
         ?'Barrido detenido. Los resultados procesados están disponibles en el panel y los CSVs descargados están en tu carpeta de descargas.'
         :'Barrido detenido. Los resultados procesados siguen disponibles en el panel para descargar o guardar en Empresas.';
+      setProgress(message);
+      setAutoProgress(message);
+    } else {
+      setHasInterruptedSweep(false);
+      const message = autoDownloadCSV
+        ?'🎉 Barrido completado con éxito. Los CSVs de cada localidad están en tu carpeta de descargas.'
+        :'🎉 Barrido completado con éxito. Los resultados están disponibles para descargar en un solo CSV o guardar en Empresas.';
       setProgress(message);
       setAutoProgress(message);
     }
@@ -488,11 +593,27 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
         <div className="notice prospect-live-status" role="status" aria-live="polite" style={{position:'sticky',top:122,zIndex:5,display:'flex',alignItems:'center',gap:10}}>
           <LoaderCircle className="spin" size={16}/>
           <div style={{flex:1}}>
-            <b>Extracción activa: {autoSector}</b>
+            <b>{autoPaused ? '⏸️ Barrido Pausado' : `Extracción activa: ${autoSector}`}</b>
             <div>{autoProgress}</div>
-            <small>{autoHistory.length} localidades procesadas · {autoAccumulated.length} empresas recopiladas. No inicies otra búsqueda hasta que termine o la detengas.</small>
+            <small>
+              {autoHistory.length} localidades procesadas · {autoAccumulated.length} empresas únicas recopiladas
+              {queueRef.current.length > 0 ? ` · ${queueRef.current.length - currentIndexRef.current} pendientes` : ''}.
+            </small>
           </div>
-          <button type="button" className="button" onClick={()=>controller.current?.abort()}><Square size={12}/> Detener</button>
+          <div style={{display:'flex',gap:6}}>
+            {!autoPaused ? (
+              <button type="button" className="button" onClick={handlePauseSweep}>
+                <Pause size={12}/> Pausar
+              </button>
+            ) : (
+              <button type="button" className="button primary" style={{background:'#17634e',color:'#fff'}} onClick={handleResumeSweep}>
+                <Play size={12}/> Reanudar
+              </button>
+            )}
+            <button type="button" className="button" onClick={handleStopSweep}>
+              <Square size={12}/> Detener
+            </button>
+          </div>
         </div>
       )}
 
@@ -534,7 +655,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
               disabled={autoRunning}
               onClick={()=>setAutoScope('national')}
             >
-              <Globe size={14}/> 🇵🇪 Barrido Nacional (Top Ciudades del Perú)
+              <Globe size={14}/> 🇵🇪 Barrido Nacional (Todo el Perú)
             </button>
           </div>
 
@@ -542,20 +663,50 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
             {autoScope==='province' ? (
               <div>
                 <b>🇵🇪 Cobertura: Perú → {autoRegion} → {autoProvince}</b>
-                <p>Barre distrito por distrito en {autoProvince}. Los resultados se acumulan en vivo para descargar en CSV o guardar en el CRM.</p>
+                <p>Barre progresivamente todos los distritos y sus centros poblados registrados (ej. Huancabamba → Huarmaca incluye Hualapampa, Rodeopampa, etc.).</p>
               </div>
             ) : (
               <div>
-                <b>🇵🇪 Cobertura Multirregional: Principales Ciudades y Capitales del Perú</b>
-                <p>Barre las zonas comerciales clave de Lima, Arequipa, Trujillo, Chiclayo, Piura, Cusco, Huancayo, Callao, Ica, Chimbote, Tacna y más.</p>
+                <b>🇵🇪 Cobertura Nacional: {nationalType === 'all' ? 'Todo el Perú (25 departamentos, 196 provincias, distritos y centros poblados)' : 'Ciudades y Capitales Comerciales Clave'}</b>
+                <p>Barre de forma progresiva e inteligente todas las localidades registradas sin requerir tipeo manual.</p>
               </div>
             )}
             <span className="pill">
               {autoScope==='province' 
                 ? `${autoDistricts.length} de ${availableDistricts.length} distritos seleccionados` 
-                : `${autoNationalTargets.length} de ${TOP_PERU_TARGETS.length} ciudades/distritos seleccionados`}
+                : nationalType === 'all'
+                  ? 'Todo el Perú (25 regiones, distritos y centros poblados)'
+                  : `${autoNationalTargets.length} de ${TOP_PERU_TARGETS.length} ciudades/distritos seleccionados`}
             </span>
           </div>
+
+          {autoScope==='national' && (
+            <div style={{display:'flex',gap:16,alignItems:'center',marginBottom:14,flexWrap:'wrap'}}>
+              <span style={{fontSize:12,fontWeight:600,color:'#2b4435'}}>Modalidad del Barrido:</span>
+              <label style={{display:'inline-flex',alignItems:'center',gap:6,cursor:'pointer',fontSize:12}}>
+                <input 
+                  type="radio" 
+                  name="nationalType" 
+                  value="all" 
+                  checked={nationalType === 'all'} 
+                  disabled={autoRunning} 
+                  onChange={()=>setNationalType('all')} 
+                />
+                <span><b>Todo el Perú</b> (25 regiones, 196 provincias, distritos y centros poblados)</span>
+              </label>
+              <label style={{display:'inline-flex',alignItems:'center',gap:6,cursor:'pointer',fontSize:12}}>
+                <input 
+                  type="radio" 
+                  name="nationalType" 
+                  value="top" 
+                  checked={nationalType === 'top'} 
+                  disabled={autoRunning} 
+                  onChange={()=>setNationalType('top')} 
+                />
+                <span><b>Top Ciudades Comerciales</b> ({TOP_PERU_TARGETS.length} zonas clave)</span>
+              </label>
+            </div>
+          )}
 
           <div className="formgrid" style={{marginBottom:15}}>
             {autoScope==='province' && (
@@ -617,6 +768,20 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
             </label>
           </div>
 
+          {autoScope==='province' && (
+            <label className="checkrow" style={{marginBottom:12}}>
+              <input 
+                type="checkbox" 
+                checked={includeLocalities} 
+                disabled={autoRunning} 
+                onChange={e=>setIncludeLocalities(e.target.checked)}
+              />
+              <span style={{fontSize:12}}>
+                <b>Incluir centros poblados, caseríos y anexos registrados</b> (ej. Huancabamba → Huarmaca incluye Hualapampa, Rodeopampa, Succhirca, Chignia Alta, etc.)
+              </span>
+            </label>
+          )}
+
           {/* Opciones y listado de selección */}
           {autoScope==='province' ? (
             <>
@@ -654,45 +819,47 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
               </div>
             </>
           ) : (
-            <>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap',marginTop:8}}>
-                <span style={{fontSize:11,fontWeight:600,color:'#395444'}}>
-                  Ciudades y distritos comerciales clave del Perú ({autoNationalTargets.length} de {TOP_PERU_TARGETS.length}):
-                </span>
-                <div style={{display:'flex',gap:8}}>
-                  <button type="button" className="textbutton" disabled={autoRunning} onClick={()=>setAutoNationalTargets([...TOP_PERU_TARGETS])}>
-                    Seleccionar todos ({TOP_PERU_TARGETS.length})
-                  </button>
-                  <button type="button" className="textbutton" disabled={autoRunning} onClick={()=>setAutoNationalTargets(TOP_PERU_TARGETS.filter(t => t.region !== 'Lima' && t.region !== 'Callao'))}>
-                    Solo Provincias ({TOP_PERU_TARGETS.filter(t => t.region !== 'Lima' && t.region !== 'Callao').length})
-                  </button>
-                  <button type="button" className="textbutton" disabled={autoRunning} onClick={()=>setAutoNationalTargets(TOP_PERU_TARGETS.filter(t => t.region === 'Lima' || t.region === 'Callao'))}>
-                    Solo Lima & Callao ({TOP_PERU_TARGETS.filter(t => t.region === 'Lima' || t.region === 'Callao').length})
-                  </button>
-                  <button type="button" className="textbutton" disabled={autoRunning} onClick={()=>setAutoNationalTargets([])}>
-                    Desmarcar todos
-                  </button>
+            nationalType === 'top' && (
+              <>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap',marginTop:8}}>
+                  <span style={{fontSize:11,fontWeight:600,color:'#395444'}}>
+                    Ciudades y distritos comerciales clave del Perú ({autoNationalTargets.length} de {TOP_PERU_TARGETS.length}):
+                  </span>
+                  <div style={{display:'flex',gap:8}}>
+                    <button type="button" className="textbutton" disabled={autoRunning} onClick={()=>setAutoNationalTargets([...TOP_PERU_TARGETS])}>
+                      Seleccionar todos ({TOP_PERU_TARGETS.length})
+                    </button>
+                    <button type="button" className="textbutton" disabled={autoRunning} onClick={()=>setAutoNationalTargets(TOP_PERU_TARGETS.filter(t => t.region !== 'Lima' && t.region !== 'Callao'))}>
+                      Solo Provincias ({TOP_PERU_TARGETS.filter(t => t.region !== 'Lima' && t.region !== 'Callao').length})
+                    </button>
+                    <button type="button" className="textbutton" disabled={autoRunning} onClick={()=>setAutoNationalTargets(TOP_PERU_TARGETS.filter(t => t.region === 'Lima' || t.region === 'Callao'))}>
+                      Solo Lima & Callao ({TOP_PERU_TARGETS.filter(t => t.region === 'Lima' || t.region === 'Callao').length})
+                    </button>
+                    <button type="button" className="textbutton" disabled={autoRunning} onClick={()=>setAutoNationalTargets([])}>
+                      Desmarcar todos
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="districtgrid">
-                {TOP_PERU_TARGETS.map(t => {
-                  const key = `${t.region}-${t.province}-${t.district}`;
-                  const isSelected = autoNationalTargets.some(x => x.region === t.region && x.province === t.province && x.district === t.district);
-                  return (
-                    <label key={key} className="districtitem">
-                      <input 
-                        type="checkbox" 
-                        disabled={autoRunning} 
-                        checked={isSelected} 
-                        onChange={()=>toggleNationalTarget(t)}
-                      />
-                      <span><b>{t.district}</b> <small style={{color:'#666'}}>({t.region})</small></span>
-                    </label>
-                  );
-                })}
-              </div>
-            </>
+                <div className="districtgrid">
+                  {TOP_PERU_TARGETS.map(t => {
+                    const key = `${t.region}-${t.province}-${t.district}`;
+                    const isSelected = autoNationalTargets.some(x => x.region === t.region && x.province === t.province && x.district === t.district);
+                    return (
+                      <label key={key} className="districtitem">
+                        <input 
+                          type="checkbox" 
+                          disabled={autoRunning} 
+                          checked={isSelected} 
+                          onChange={()=>toggleNationalTarget(t)}
+                        />
+                        <span><b>{t.district}</b> <small style={{color:'#666'}}>({t.region})</small></span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </>
+            )
           )}
 
           <div className="prospectcontrols" style={{marginTop:15}}>
@@ -707,10 +874,22 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
             </label>
 
             {!autoRunning ? (
-              <button type="button" className="primary" onClick={runAutoSweep}>
-                <Zap size={16}/> Iniciar barrido
-              </button>
-            ) : <span className="pill">Usa el botón Detener del estado de extracción.</span>}
+              <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
+                <button type="button" className="primary" onClick={()=>runAutoSweep(false)}>
+                  <Zap size={16}/> Iniciar barrido
+                </button>
+                {hasInterruptedSweep && queueRef.current.length > currentIndexRef.current + 1 && (
+                  <button 
+                    type="button" 
+                    className="button" 
+                    style={{borderColor:'#17634e',color:'#17634e',fontWeight:600,display:'inline-flex',alignItems:'center',gap:6}} 
+                    onClick={()=>runAutoSweep(true)}
+                  >
+                    <RotateCcw size={14}/> Continuar barrido anterior ({queueRef.current.length - currentIndexRef.current} pendientes desde {interruptedTarget})
+                  </button>
+                )}
+              </div>
+            ) : <span className="pill">Usa los botones Pausar / Reanudar / Detener en el estado de extracción.</span>}
           </div>
 
           {autoHistory.length > 0 && (
