@@ -7,7 +7,7 @@ export async function POST(request:Request) {
   if(!user)return Response.json({error:'Inicia sesión.'},{status:401});
   try {
     const body=await request.json() as {results:Record<string,any>[],service:string};
-    if(!Array.isArray(body.results)||!body.results.length||body.results.length>120) return Response.json({error:'Selecciona entre 1 y 120 empresas.'},{status:400});
+    if(!Array.isArray(body.results)||!body.results.length||body.results.length>1000) return Response.json({error:'Selecciona entre 1 y 1000 empresas.'},{status:400});
     const db=getDb();
     const existing=await db.select().from(records).where(eq(records.owner,user.userId));
     const known=new Set(existing.filter(r=>r.kind==='company').map(r=>JSON.parse(r.data).mapsId).filter(Boolean));
