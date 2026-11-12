@@ -1,7 +1,7 @@
 'use client';
-import {useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import LocationFields from './location-fields';
-import {Search,Download,ExternalLink,Mail,LoaderCircle,Square,X,MapPin,Zap,CheckCircle2,FileSpreadsheet,Globe,Pause,Play,RotateCcw} from 'lucide-react';
+import {Search,Download,ExternalLink,Mail,LoaderCircle,Square,X,MapPin,Zap,CheckCircle2,FileSpreadsheet,Globe,Pause,Play,RotateCcw,Trash2} from 'lucide-react';
 import PE_REGIONS_DATA from '../public/geography/PE.json';
 import {
   TargetLocation,
@@ -11,6 +11,44 @@ import {
   registerSeenRecord,
   cleanPhone
 } from '../lib/peru-localities';
+
+const SWEEP_STORAGE_KEY = 'odisea_sweep_state_v1';
+
+function saveSweepState(
+  queue: TargetLocation[],
+  currentIndex: number,
+  sector: string,
+  autoScope: 'province'|'national',
+  nationalType: 'all'|'top',
+  autoRegion: string,
+  autoProvince: string,
+  autoAccumulated: Row[],
+  autoHistory: any[],
+  interruptedTarget: string
+) {
+  try {
+    const data = {
+      queue,
+      currentIndex,
+      sector,
+      autoScope,
+      nationalType,
+      autoRegion,
+      autoProvince,
+      autoAccumulated,
+      autoHistory,
+      interruptedTarget,
+      updatedAt: new Date().toISOString()
+    };
+    localStorage.setItem(SWEEP_STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {}
+}
+
+function clearSweepState() {
+  try {
+    localStorage.removeItem(SWEEP_STORAGE_KEY);
+  } catch (e) {}
+}
 
 type Row=Record<string,any>;
 
@@ -191,6 +229,42 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
   const seenMapsIdsRef = useRef<Set<string>>(new Set());
   const seenPhonesRef = useRef<Set<string>>(new Set());
   const seenNamesRef = useRef<Set<string>>(new Set());
+
+  // Restaurar barrido interrumpido desde localStorage al cargar o recargar la página
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SWEEP_STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved && Array.isArray(saved.queue) && saved.queue.length > 0 && typeof saved.currentIndex === 'number' && saved.currentIndex < saved.queue.length) {
+        queueRef.current = saved.queue;
+        currentIndexRef.current = saved.currentIndex;
+        if (saved.sector) {
+          setAutoSector(saved.sector);
+          setTerritory(prev => ({ ...prev, sector: saved.sector }));
+        }
+        if (saved.autoScope) setAutoScope(saved.autoScope);
+        if (saved.nationalType) setNationalType(saved.nationalType);
+        if (saved.autoRegion) setAutoRegion(saved.autoRegion);
+        if (saved.autoProvince) setAutoProvince(saved.autoProvince);
+        if (Array.isArray(saved.autoAccumulated) && saved.autoAccumulated.length > 0) {
+          setAutoAccumulated(saved.autoAccumulated);
+          setResults(saved.autoAccumulated);
+          for (const item of saved.autoAccumulated) {
+            registerSeenRecord(item, seenMapsIdsRef.current, seenPhonesRef.current, seenNamesRef.current);
+          }
+        }
+        if (Array.isArray(saved.autoHistory)) setAutoHistory(saved.autoHistory);
+
+        const lastTarget = saved.queue[saved.currentIndex];
+        const targetName = saved.interruptedTarget || lastTarget?.label || `${lastTarget?.district} (${lastTarget?.region})`;
+        setInterruptedTarget(targetName);
+        setHasInterruptedSweep(true);
+        const pend = saved.queue.length - saved.currentIndex;
+        setProgress(`Se restauró el barrido anterior (${pend} localidades pendientes desde ${targetName}). Haz clic en Continuar barrido.`);
+      }
+    } catch (e) {}
+  }, []);
 
   const peRegions = PE_REGIONS_DATA as unknown as GeoRegion[];
   const currentRegionData = peRegions.find(r => r.name.toLowerCase() === autoRegion.toLowerCase()) || peRegions.find(r => r.name === 'Lima') || peRegions[0];
@@ -459,6 +533,11 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
           setAutoProgress(message);
         }
 
+        // Guardar progreso en almacenamiento local para no perder datos si se recarga la pestaña
+        try {
+          saveSweepState(queue, i + 1, sectorName, autoScope, nationalType, autoRegion, autoProvince, [...autoAccumulated, ...districtResults], [{district:targetLabel,count:districtResults.length,downloaded:autoDownloadCSV,rows:districtResults}, ...autoHistory], targetLabel);
+        } catch(e){}
+
         // Si hay una siguiente localidad, pausar para proteger la conexión
         if(i < queue.length - 1 && !abort.signal.aborted){
           for(let s=autoDelay; s>0; s--){
@@ -517,10 +596,12 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
     controller.current=null;
 
     if(abort.signal.aborted || rateLimited){
-      if(currentIndexRef.current < queue.length - 1){
+      if(currentIndexRef.current < queue.length){
         setHasInterruptedSweep(true);
         const lastTarget = queue[currentIndexRef.current];
-        setInterruptedTarget(lastTarget?.label || `${lastTarget?.district} (${lastTarget?.region})`);
+        const lastLabel = lastTarget?.label || `${lastTarget?.district} (${lastTarget?.region})`;
+        setInterruptedTarget(lastLabel);
+        saveSweepState(queue, currentIndexRef.current, sectorName, autoScope, nationalType, autoRegion, autoProvince, autoAccumulated, autoHistory, lastLabel);
       }
       const message = autoDownloadCSV
         ?'Barrido detenido. Los resultados procesados están disponibles en el panel y los CSVs descargados están en tu carpeta de descargas.'
@@ -529,6 +610,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
       setAutoProgress(message);
     } else {
       setHasInterruptedSweep(false);
+      clearSweepState();
       const message = autoDownloadCSV
         ?'🎉 Barrido completado con éxito. Los CSVs de cada localidad están en tu carpeta de descargas.'
         :'🎉 Barrido completado con éxito. Los resultados están disponibles para descargar en un solo CSV o guardar en Empresas.';
@@ -893,17 +975,34 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
             {!autoRunning ? (
               <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
                 <button type="button" className="primary" onClick={()=>runAutoSweep(false)}>
-                  <Zap size={16}/> Iniciar barrido
+                  <Zap size={16}/> Iniciar nuevo barrido
                 </button>
-                {hasInterruptedSweep && queueRef.current.length > currentIndexRef.current + 1 && (
-                  <button 
-                    type="button" 
-                    className="button" 
-                    style={{borderColor:'#17634e',color:'#17634e',fontWeight:600,display:'inline-flex',alignItems:'center',gap:6}} 
-                    onClick={()=>runAutoSweep(true)}
-                  >
-                    <RotateCcw size={14}/> Continuar barrido anterior ({queueRef.current.length - currentIndexRef.current} pendientes desde {interruptedTarget})
-                  </button>
+                {hasInterruptedSweep && queueRef.current.length > currentIndexRef.current && (
+                  <div style={{display:'inline-flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+                    <button 
+                      type="button" 
+                      className="button" 
+                      style={{borderColor:'#17634e',color:'#17634e',fontWeight:600,display:'inline-flex',alignItems:'center',gap:6}} 
+                      onClick={()=>runAutoSweep(true)}
+                    >
+                      <RotateCcw size={14}/> Continuar barrido anterior ({queueRef.current.length - currentIndexRef.current} pendientes desde {interruptedTarget})
+                    </button>
+                    <button 
+                      type="button" 
+                      className="textbutton" 
+                      style={{color:'#888',fontSize:12,display:'inline-flex',alignItems:'center',gap:4}}
+                      onClick={()=>{
+                        clearSweepState();
+                        setHasInterruptedSweep(false);
+                        queueRef.current = [];
+                        currentIndexRef.current = 0;
+                        setProgress('Barrido guardado descartado.');
+                      }}
+                      title="Descartar barrido guardado y empezar desde cero"
+                    >
+                      <Trash2 size={13}/> Descartar
+                    </button>
+                  </div>
                 )}
               </div>
             ) : <span className="pill">Usa los botones Pausar / Reanudar / Detener en el estado de extracción.</span>}
