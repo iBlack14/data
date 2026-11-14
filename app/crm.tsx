@@ -822,7 +822,8 @@ export default function CRM(){
       status: 'Borrador',
       notes: ''
     };
-    setQuoteLookupQuery(company?.ruc || company?.name || '');
+    // Solo pre-llena el buscador con el nombre, no el RUC (el RUC ya está en el campo RUC)
+    setQuoteLookupQuery((!company?.ruc && company?.name) ? company.name : '');
     setActiveQuote(newQ);
   }
 
@@ -861,7 +862,8 @@ export default function CRM(){
       sunatCondicion: d.condicion || '',
     } : cur);
     setRucResults([]);
-    setToast(`✅ ${d.nombre} — ${d.estado} ${d.condicion ? '· ' + d.condicion : ''}`);
+    setQuoteLookupQuery(''); // ← limpia el campo de búsqueda
+    setToast(`✅ ${d.nombre} — ${d.estado}${d.condicion ? ' · ' + d.condicion : ''}`);
   }
 
   function recalcQuote(q: Row): Row {
