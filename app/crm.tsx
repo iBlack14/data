@@ -775,75 +775,9 @@ export default function CRM(){
   const [activeQuote, setActiveQuote] = useState<Row | null>(null);
   const [quotePreview, setQuotePreview] = useState<Row | null>(null);
   const [sendingQuoteEmail, setSendingQuoteEmail] = useState(false);
-
-  // SUNAT State
-  const [sunatQueryRuc, setSunatQueryRuc] = useState('');
-  const [sunatLoading, setSunatLoading] = useState(false);
-  const [sunatResult, setSunatResult] = useState<any>(null);
-  const [sunatConfig, setSunatConfig] = useState<{ configured: boolean; clientId: string; clientSecret: string; hasLocalPadron: boolean; lastSync: string | null }>({
-    configured: false,
-    clientId: '',
-    clientSecret: '',
-    hasLocalPadron: false,
-    lastSync: null
-  });
-  const [sunatSavingConfig, setSunatSavingConfig] = useState(false);
-
-  async function querySunat(rucToQuery: string) {
-    const clean = (rucToQuery || '').trim().replace(/\D/g, '');
-    if (clean.length !== 11) {
-      setToast('Ingresa un RUC de 11 dígitos numéricos.');
-      return;
-    }
-    setSunatLoading(true);
-    setSunatResult(null);
-    try {
-      const res = await fetch(`/api/sunat?ruc=${clean}`);
-      const data: any = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error en la consulta');
-      setSunatResult(data);
-      if (data.razonSocial) {
-        setToast(`✓ RUC encontrado: ${data.razonSocial}`);
-      } else {
-        setToast(`✓ ${data.message || 'RUC válido según algoritmo oficial de SUNAT'}`);
-      }
-    } catch (e: any) {
-      setToast(`⚠️ ${e.message}`);
-    } finally {
-      setSunatLoading(false);
-    }
-  }
-
-  async function loadSunatStatus() {
-    try {
-      const res = await fetch('/api/sunat?action=status');
-      const data: any = await res.json();
-      setSunatConfig(prev => ({ ...prev, ...data }));
-    } catch {}
-  }
-
-  async function saveSunatCredentials(e: React.FormEvent) {
-    e.preventDefault();
-    setSunatSavingConfig(true);
-    try {
-      const res = await fetch('/api/sunat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId: sunatConfig.clientId,
-          clientSecret: sunatConfig.clientSecret
-        })
-      });
-      const data: any = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al guardar credenciales');
-      setToast('✅ Credenciales oficiales de SUNAT guardadas exitosamente.');
-      loadSunatStatus();
-    } catch (e: any) {
-      setToast(e.message);
-    } finally {
-      setSunatSavingConfig(false);
-    }
-  }
+  const [quoteLookupQuery, setQuoteLookupQuery] = useState('');
+  const [rucSearching, setRucSearching] = useState(false);
+  const [rucResults, setRucResults] = useState<any[]>([]);
 
   const allCompanies=rows.filter(r=>r.kind==='company');
   const companies=allCompanies;
@@ -862,6 +796,7 @@ export default function CRM(){
       code: `COT-${new Date().getFullYear()}-${String(existingQuotesCount).padStart(3, '0')}`,
       companyId: company?.id || '',
       companyName: company?.name || '',
+      ruc: company?.ruc || '',
       companyEmail: company?.email || '',
       companyPhone: company?.phone || '',
       contactPerson: '',
@@ -887,7 +822,46 @@ export default function CRM(){
       status: 'Borrador',
       notes: ''
     };
+    setQuoteLookupQuery(company?.ruc || company?.name || '');
     setActiveQuote(newQ);
+  }
+
+  async function lookupQuoteRuc() {
+    if (!activeQuote) return;
+    const query = quoteLookupQuery.trim();
+    if (!query) return;
+    setRucSearching(true);
+    setRucResults([]);
+    try {
+      const res = await fetch(`/api/sunat/search?q=${encodeURIComponent(query)}`);
+      const data = await res.json() as any;
+      if (data.error) { setToast('⚠️ ' + data.error); return; }
+      if (data.results) {
+        // Búsqueda por razón social → mostrar lista para elegir
+        setRucResults(data.results);
+        if (data.results.length === 0) setToast('No se encontraron empresas con ese nombre.');
+      } else {
+        // RUC exacto → autocompletar directamente
+        applyRucResult(data);
+      }
+    } catch (e: any) {
+      setToast('Error consultando SUNAT: ' + e.message);
+    } finally {
+      setRucSearching(false);
+    }
+  }
+
+  function applyRucResult(d: any) {
+    setActiveQuote(cur => cur ? {
+      ...cur,
+      ruc: d.ruc || cur.ruc,
+      companyName: d.nombre || cur.companyName,
+      companyAddress: d.direccion || cur.companyAddress || '',
+      sunatEstado: d.estado || '',
+      sunatCondicion: d.condicion || '',
+    } : cur);
+    setRucResults([]);
+    setToast(`✅ ${d.nombre} — ${d.estado} ${d.condicion ? '· ' + d.condicion : ''}`);
   }
 
   function recalcQuote(q: Row): Row {
@@ -1106,7 +1080,6 @@ export default function CRM(){
     load();
     loadAccounts();
     loadWhatsappStatus();
-    loadSunatStatus();
   },[]);
 
   // Polling WhatsApp status when QR is active or tab is WhatsApp
@@ -1570,7 +1543,6 @@ export default function CRM(){
     Campañas:['Mensajes con propósito.','Prepara propuestas relevantes y da seguimiento a cada contacto.'],
     Correos:['Cuentas de correo corporativo.','Configura uno o varios correos para enviar propuestas directamente desde tu dominio (ventas@, contacto@).'],
     WhatsApp:['WhatsApp comercial.','Vincula tu cuenta con código QR para envíos con 1 clic, o usa el envío directo sin consumo de recursos.'],
-    SUNAT:['Consulta RUC Oficial SUNAT.','Valida RUCs al instante y obtén datos fiscales oficiales directamente de SUNAT sin intermediarios ni costos.'],
     Servicios:['Soluciones para cada negocio.','Tu catálogo comercial, listo para conectar con nuevas oportunidades.']
   };
 
@@ -1587,7 +1559,7 @@ export default function CRM(){
       </div>
       <div className="navcaption">PRINCIPAL</div>
       <nav>
-        {[[LayoutDashboard,'Resumen'],[Building2,'Empresas'],[FileText,'Cotizaciones'],[Globe2,'Territorios'],[Megaphone,'Campañas'],[Mail,'Correos'],[MessageCircle,'WhatsApp'],[Search,'SUNAT'],[Layers3,'Servicios']].map(([Icon,label]:any)=>(
+        {[[LayoutDashboard,'Resumen'],[Building2,'Empresas'],[FileText,'Cotizaciones'],[Globe2,'Territorios'],[Megaphone,'Campañas'],[Mail,'Correos'],[MessageCircle,'WhatsApp'],[Layers3,'Servicios']].map(([Icon,label]:any)=>(
           <button key={label} className={tab===label?'navitem active':'navitem'} onClick={()=>setTab(label)}>
             <Icon size={19}/>
             {label}
@@ -1626,8 +1598,6 @@ export default function CRM(){
           </div>
           {tab==='Cotizaciones'?(
             <button className="primary" onClick={()=>openNewQuote()}><Plus size={17}/> Nueva cotización</button>
-          ):tab==='SUNAT'?(
-            <button className="primary" onClick={()=>setTab('Empresas')}><Building2 size={17}/> Ver empresas ({companies.length})</button>
           ):(
             <button className="primary" onClick={newCompany}><Plus size={17}/> Nueva empresa</button>
           )}
@@ -2554,7 +2524,7 @@ export default function CRM(){
                               type="button" 
                               className="iconbutton" 
                               title="Editar cotización" 
-                              onClick={()=>setActiveQuote(q)}
+                              onClick={()=>{setQuoteLookupQuery(q.ruc||q.companyName||'');setActiveQuote(q);}}
                             >
                               <Edit3 size={15}/>
                             </button>
@@ -2577,242 +2547,7 @@ export default function CRM(){
           </section>
         </div>}
 
-        {tab==='SUNAT'&&<div>
-          {/* Tarjeta Principal: Buscador de RUC en SUNAT */}
-          <section className="card padded" style={{marginBottom:24}}>
-            <div className="sectionhead" style={{padding:0,marginBottom:16}}>
-              <div>
-                <div className="eyebrow">CONSULTA DIRECTA DE CONTRIBUYENTES (PERÚ)</div>
-                <h2 style={{margin:'4px 0 2px'}}>Consultar RUC en SUNAT Oficial</h2>
-                <p style={{fontSize:12,color:'#57705c',margin:0}}>
-                  Consulta oficial directa a los servidores de SUNAT. Sin pasarelas de terceros, sin intermediarios ni costos por consulta.
-                </p>
-              </div>
-              <span className={`badge ${sunatConfig.configured?'won':sunatConfig.hasLocalPadron?'won':''}`}>
-                {sunatConfig.configured?'API Oficial Conectada':sunatConfig.hasLocalPadron?'Padrón Local Disponible':'Modo Algorítmico SUNAT'}
-              </span>
-            </div>
 
-            <form onSubmit={e=>{e.preventDefault();querySunat(sunatQueryRuc);}} style={{display:'flex',gap:12,alignItems:'flex-end',flexWrap:'wrap',marginTop:16}}>
-              <label style={{margin:0,flex:1,minWidth:280,fontSize:12,fontWeight:700,color:'#235338'}}>
-                Número de RUC (11 dígitos):
-                <input 
-                  type="text" 
-                  maxLength={11} 
-                  required
-                  placeholder="Ej: 20131312955 (SUNAT) o 20100047218 (BCP)" 
-                  value={sunatQueryRuc} 
-                  onChange={e=>setSunatQueryRuc(e.target.value.replace(/\D/g,''))}
-                  style={{marginTop:6,fontFamily:'monospace',fontSize:15,fontWeight:700,letterSpacing:1}}
-                />
-              </label>
-              <button 
-                type="submit" 
-                className="primary" 
-                disabled={sunatLoading || sunatQueryRuc.length !== 11}
-                style={{height:42,padding:'0 20px',fontSize:12,display:'inline-flex',alignItems:'center',gap:6}}
-              >
-                <Search size={16}/> {sunatLoading ? 'Consultando SUNAT…' : 'Consultar RUC'}
-              </button>
-            </form>
-
-            <div style={{display:'flex',gap:8,alignItems:'center',marginTop:10,fontSize:11,color:'#678065',flexWrap:'wrap'}}>
-              <span>💡 RUCs de prueba rápida:</span>
-              <button type="button" className="textbutton" style={{fontSize:11,textDecoration:'underline'}} onClick={()=>{setSunatQueryRuc('20131312955');querySunat('20131312955');}}>20131312955 (SUNAT)</button>
-              <span>·</span>
-              <button type="button" className="textbutton" style={{fontSize:11,textDecoration:'underline'}} onClick={()=>{setSunatQueryRuc('20100047218');querySunat('20100047218');}}>20100047218 (BCP)</button>
-              <span>·</span>
-              <button type="button" className="textbutton" style={{fontSize:11,textDecoration:'underline'}} onClick={()=>{setSunatQueryRuc('20100070970');querySunat('20100070970');}}>20100070970 (Interbank)</button>
-            </div>
-
-            {/* Resultado de la consulta */}
-            {sunatResult && (
-              <div style={{marginTop:20,border:'1.5px solid #86efac',background:'#f0fdf4',borderRadius:10,padding:20}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12,marginBottom:14}}>
-                  <div>
-                    <span style={{fontSize:10,fontWeight:800,color:'#166534',letterSpacing:1,textTransform:'uppercase',display:'block'}}>
-                      RESULTADO OFICIAL DE SUNAT ({sunatResult.source})
-                    </span>
-                    <h3 style={{fontSize:18,fontWeight:900,color:'#14532d',margin:'4px 0 2px'}}>
-                      {sunatResult.razonSocial || `RUC ${sunatResult.ruc}`}
-                    </h3>
-                    <div style={{fontSize:12,color:'#374151',fontWeight:600}}>
-                      {sunatResult.tipo || 'Contribuyente'} · RUC: <span style={{fontFamily:'monospace'}}>{sunatResult.ruc}</span>
-                    </div>
-                  </div>
-
-                  <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                    <span style={{
-                      background: sunatResult.estado === 'ACTIVO' ? '#dcfce7' : '#fee2e2',
-                      color: sunatResult.estado === 'ACTIVO' ? '#15803d' : '#b91c1c',
-                      border: `1px solid ${sunatResult.estado === 'ACTIVO' ? '#86efac' : '#fca5a5'}`,
-                      padding: '4px 10px',
-                      borderRadius: 6,
-                      fontSize: 11,
-                      fontWeight: 800
-                    }}>
-                      ● {sunatResult.estado || 'ACTIVO'}
-                    </span>
-                    <span style={{
-                      background: sunatResult.condicion === 'HABIDO' ? '#dcfce7' : '#fef3c7',
-                      color: sunatResult.condicion === 'HABIDO' ? '#15803d' : '#b45309',
-                      border: `1px solid ${sunatResult.condicion === 'HABIDO' ? '#86efac' : '#fde68a'}`,
-                      padding: '4px 10px',
-                      borderRadius: 6,
-                      fontSize: 11,
-                      fontWeight: 800
-                    }}>
-                      {sunatResult.condicion || 'HABIDO'}
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))',gap:12,fontSize:12,color:'#374151',background:'#fff',padding:14,borderRadius:8,border:'1px solid #dcfce7'}}>
-                  <div>
-                    <b style={{color:'#166534',display:'block',fontSize:10,textTransform:'uppercase'}}>Domicilio Fiscal / Dirección</b>
-                    <span>{sunatResult.direccion || 'Conforme a padrón oficial SUNAT'}</span>
-                  </div>
-                  <div>
-                    <b style={{color:'#166534',display:'block',fontSize:10,textTransform:'uppercase'}}>Ubicación Geográfica</b>
-                    <span>{[sunatResult.distrito, sunatResult.provincia, sunatResult.departamento].filter(Boolean).join(' - ') || 'Perú'}</span>
-                  </div>
-                  <div>
-                    <b style={{color:'#166534',display:'block',fontSize:10,textTransform:'uppercase'}}>Validación de Control</b>
-                    <span>✓ Algoritmo Módulo 11 Verificado</span>
-                  </div>
-                </div>
-
-                <div style={{marginTop:16,display:'flex',justifyContent:'flex-end',gap:10}}>
-                  <button 
-                    type="button" 
-                    className="primary" 
-                    style={{background:'#16a34a',borderColor:'#15803d'}}
-                    onClick={async ()=>{
-                      const newComp: Row = {
-                        id: crypto.randomUUID(),
-                        kind: 'company',
-                        name: sunatResult.razonSocial || `Contribuyente RUC ${sunatResult.ruc}`,
-                        sector: sunatResult.tipo === 'Persona Jurídica' ? 'Empresas' : 'Servicios Profesionales',
-                        country: 'Perú',
-                        region: sunatResult.departamento || 'Lima',
-                        province: sunatResult.provincia || 'Lima',
-                        district: sunatResult.distrito || '',
-                        city: sunatResult.provincia || 'Lima',
-                        address: sunatResult.direccion || '',
-                        stage: 'Nuevo',
-                        verified: new Date().toISOString().slice(0, 10),
-                        notes: `[SUNAT] RUC: ${sunatResult.ruc} · ${sunatResult.tipo} · Estado: ${sunatResult.estado} · Condición: ${sunatResult.condicion}`,
-                        permissionEmail: false,
-                        permissionWhatsApp: false
-                      };
-                      await save([newComp], `✅ ¡${newComp.name} añadida a tus empresas!`);
-                      setTab('Empresas');
-                    }}
-                  >
-                    <Plus size={15}/> Añadir a mis Empresas del CRM
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* Dos opciones oficiales sin terceros */}
-          <div className="twocol">
-            {/* OPCIÓN 1: API REST OFICIAL SUNAT CON CLAVE SOL */}
-            <section className="card padded">
-              <div className="sectionhead" style={{padding:0,marginBottom:12}}>
-                <div>
-                  <div className="eyebrow">OPCIÓN 1 · DIRECTA DE SUNAT</div>
-                  <h2>API Oficial SUNAT con Clave SOL</h2>
-                </div>
-                <span className={`badge ${sunatConfig.configured?'won':'off'}`}>
-                  {sunatConfig.configured?'Conectado':'Sin configurar'}
-                </span>
-              </div>
-
-              <p style={{fontSize:11,lineHeight:1.6,color:'#4f6a55'}}>
-                SUNAT ofrece credenciales oficiales gratuitas para empresas mediante su portal SOL. Con esto, tus consultas van directo a los servidores de SUNAT en tiempo real y sin intermediarios.
-              </p>
-
-              <form onSubmit={saveSunatCredentials} style={{marginTop:16}}>
-                <div style={{display:'flex',flexDirection:'column',gap:12}}>
-                  <label style={{fontSize:11,fontWeight:700,color:'#2d493a'}}>
-                    Client ID (SUNAT Clave SOL):
-                    <input 
-                      required 
-                      placeholder="Ej. e74bf912-3456-4abc-..." 
-                      value={sunatConfig.clientId} 
-                      onChange={e=>setSunatConfig({...sunatConfig,clientId:e.target.value})}
-                      style={{marginTop:4,fontFamily:'monospace',fontSize:12}}
-                    />
-                  </label>
-                  <label style={{fontSize:11,fontWeight:700,color:'#2d493a'}}>
-                    Client Secret (SUNAT Clave SOL):
-                    <input 
-                      required 
-                      type="password"
-                      placeholder="••••••••••••••••••••••••" 
-                      value={sunatConfig.clientSecret} 
-                      onChange={e=>setSunatConfig({...sunatConfig,clientSecret:e.target.value})}
-                      style={{marginTop:4,fontFamily:'monospace',fontSize:12}}
-                    />
-                  </label>
-                </div>
-
-                <div style={{marginTop:16,display:'flex',justifyContent:'flex-end'}}>
-                  <button type="submit" className="primary" disabled={sunatSavingConfig}>
-                    <Check size={16}/> {sunatSavingConfig ? 'Guardando…' : 'Guardar Credenciales Oficiales'}
-                  </button>
-                </div>
-              </form>
-
-              <div style={{marginTop:18,background:'#fafcf9',border:'1px solid #e2ebd8',borderRadius:8,padding:14,fontSize:11,color:'#566e57',lineHeight:1.7}}>
-                <b style={{color:'#1e5c36'}}>Cómo obtener gratis tu Client ID y Secret en SUNAT:</b><br/>
-                1. Ingresa a <b>sunat.gob.pe</b> con tu RUC, Usuario y Clave SOL.<br/>
-                2. Menú SOL &gt; <b>Empresas</b> &gt; <b>Mis Trámites y Consultas</b>.<br/>
-                3. Ve a <b>Solicitudes</b> &gt; <b>Gestión de Aplicaciones</b> &gt; <b>Registrar Aplicación</b>.<br/>
-                4. Elige <i>Consulta RUC Contribuyentes</i> y copia el Client ID y Secret generados.
-              </div>
-            </section>
-
-            {/* OPCIÓN 2: BASE PROPIA CON PADRÓN OFICIAL DE SUNAT */}
-            <section className="card padded">
-              <div className="sectionhead" style={{padding:0,marginBottom:12}}>
-                <div>
-                  <div className="eyebrow">OPCIÓN 2 · BASE DE DATOS 100% PROPIA</div>
-                  <h2>Padrón Reducido Oficial SUNAT</h2>
-                </div>
-                <span className={`badge ${sunatConfig.hasLocalPadron?'won':''}`}>
-                  {sunatConfig.hasLocalPadron?'Padrón Listo':'No descargado'}
-                </span>
-              </div>
-
-              <p style={{fontSize:11,lineHeight:1.6,color:'#4f6a55'}}>
-                SUNAT publica periódicamente el archivo oficial comprimido de todos los contribuyentes del Perú (~4.5 millones de empresas y personas con negocio).
-              </p>
-
-              <div style={{margin:'16px 0',border:'1px solid #e2ebd8',borderRadius:8,padding:16,background:'#fafcf9'}}>
-                <b style={{fontSize:12,color:'#1e5c36',display:'block',marginBottom:6}}>Ventajas de tener tu propia base local:</b>
-                <ul style={{margin:0,paddingLeft:18,fontSize:11,color:'#566e57',lineHeight:1.8}}>
-                  <li><b>Velocidad extrema:</b> Consultas en menos de 10 milisegundos.</li>
-                  <li><b>Sin límites:</b> Realiza millones de consultas sin restricciones.</li>
-                  <li><b>100% Offline:</b> Funciona incluso si no hay conexión a internet.</li>
-                  <li><b>Cero intermediarios:</b> La data proviene directo del servidor oficial de SUNAT.</li>
-                </ul>
-              </div>
-
-              <div style={{background:'#edf4ec',border:'1px solid #d4e5d4',borderRadius:8,padding:14,fontSize:11}}>
-                <b style={{color:'#166534',display:'block',marginBottom:4}}>Comando para descargar y sincronizar el padrón oficial:</b>
-                <code style={{display:'block',background:'#fff',padding:'8px 10px',borderRadius:6,border:'1px solid #cce0cd',fontFamily:'monospace',fontSize:12,color:'#166534'}}>
-                  node scripts/sync-sunat-padron.mjs
-                </code>
-                <small style={{display:'block',color:'#6b7280',marginTop:6}}>
-                  Descarga automáticamente el archivo <code>padron_reducido_ruc.zip</code> (~394 MB) directo desde <code>sunat.gob.pe</code> y lo deja listo para búsquedas instantáneas.
-                </small>
-              </div>
-            </section>
-          </div>
-        </div>}
       </div>
     </main>
 
@@ -2826,56 +2561,7 @@ export default function CRM(){
           <button className="iconbutton" aria-label="Cerrar" onClick={()=>setEditor(null)}><X/></button>
         </div>
         <form onSubmit={async e=>{e.preventDefault();if(await save([editor]))setEditor(null);}}>
-          {/* Autocompletar con SUNAT Oficial */}
-          <div style={{background:'#edf7ed',border:'1px solid #c8e6c9',borderRadius:8,padding:12,marginBottom:16,display:'flex',gap:10,alignItems:'flex-end',flexWrap:'wrap'}}>
-            <label style={{margin:0,flex:1,minWidth:220,fontSize:11,fontWeight:700,color:'#1b5e20'}}>
-              🏛️ Consultar RUC oficial en SUNAT (Autocompletar datos):
-              <input 
-                type="text" 
-                maxLength={11}
-                placeholder="Ingresa 11 dígitos (Ej: 20131312955)" 
-                value={sunatQueryRuc} 
-                onChange={e=>setSunatQueryRuc(e.target.value.replace(/\D/g,''))}
-                style={{marginTop:4,fontFamily:'monospace',fontSize:13,fontWeight:700}}
-              />
-            </label>
-            <button 
-              type="button" 
-              className="primary" 
-              disabled={sunatLoading || sunatQueryRuc.length !== 11}
-              style={{background:'#2e7d32',borderColor:'#1b5e20',height:38}}
-              onClick={async ()=>{
-                setSunatLoading(true);
-                try {
-                  const res = await fetch(`/api/sunat?ruc=${sunatQueryRuc}`);
-                  const d: any = await res.json();
-                  if (!res.ok) throw new Error(d.error || 'RUC no válido');
-                  setEditor(prev => {
-                    if (!prev) return prev;
-                    return {
-                      ...prev,
-                      ruc: d.ruc,
-                      name: d.razonSocial || prev.name,
-                      address: d.direccion || prev.address,
-                      region: d.departamento || prev.region,
-                      province: d.provincia || prev.province,
-                      district: d.distrito || prev.district,
-                      notes: prev.notes 
-                        ? `${prev.notes}\n[SUNAT] ${d.tipo} · Estado: ${d.estado} · Condición: ${d.condicion}` 
-                        : `[SUNAT] ${d.tipo} · Estado: ${d.estado} · Condición: ${d.condicion}`
-                    };
-                  });
-                  setToast(d.razonSocial ? `✓ Datos de ${d.razonSocial} autocompletados desde SUNAT` : `✓ RUC ${d.ruc} validado (${d.tipo})`);
-                } catch(e: any) {
-                  setToast(`⚠️ ${e.message}`);
-                } finally {
-                  setSunatLoading(false);
-                }
-              }}
-            >
-              {sunatLoading ? 'Consultando SUNAT…' : '🔍 Consultar y Autocompletar'}
-            </button>
-          </div>
+
 
           <div className="formgrid">
             {[
@@ -3431,6 +3117,59 @@ export default function CRM(){
                     placeholder="Ej. Estudio Jurídico Legalia" 
                     value={activeQuote.companyName || ''} 
                     onChange={e=>setActiveQuote({...activeQuote,companyName:e.target.value})}
+                  />
+                </label>
+                <label>Buscar por RUC o razón social (SUNAT)
+                  <div style={{display:'flex',gap:6}}>
+                    <input
+                      placeholder="RUC (11 dígitos) o razón social"
+                      value={quoteLookupQuery}
+                      onChange={e=>{setQuoteLookupQuery(e.target.value);setRucResults([]);}}
+                      onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();lookupQuoteRuc();}}}
+                    />
+                    <button type="button" className="button" onClick={lookupQuoteRuc}
+                      disabled={!quoteLookupQuery.trim()||rucSearching}
+                      style={{whiteSpace:'nowrap',minWidth:90}}>
+                      {rucSearching ? '⏳ Buscando…' : <><Search size={14}/> Consultar</>}
+                    </button>
+                  </div>
+                  {rucResults.length>0 && (
+                    <div style={{border:'1px solid #d1fae5',borderRadius:8,marginTop:6,background:'#f0fdf4',maxHeight:220,overflowY:'auto'}}>
+                      {rucResults.map((r,i)=>(
+                        <div key={i}
+                          onClick={()=>applyRucResult(r)}
+                          style={{padding:'8px 12px',cursor:'pointer',borderBottom:'1px solid #d1fae5',fontSize:13,display:'flex',flexDirection:'column',gap:2}}
+                          onMouseEnter={e=>(e.currentTarget.style.background='#dcfce7')}
+                          onMouseLeave={e=>(e.currentTarget.style.background='')}>
+                          <strong style={{color:'#166534'}}>{r.nombre}</strong>
+                          <span style={{color:'#64748b',fontSize:11}}>RUC {r.ruc} · {r.estado} · {r.distrito}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <small style={{color:'#64748b',lineHeight:1.5,marginTop:4,display:'block'}}>
+                    Consulta directa a SUNAT. Escribe el RUC exacto (11 dígitos) o la razón social para buscar.
+                  </small>
+                </label>
+                <label>RUC
+                  <input
+                    inputMode="numeric"
+                    maxLength={11}
+                    placeholder="11 dígitos"
+                    value={activeQuote.ruc || ''}
+                    onChange={e=>setActiveQuote({...activeQuote,ruc:e.target.value.replace(/\D/g,'').slice(0,11)})}
+                  />
+                  {activeQuote.sunatEstado && (
+                    <small style={{color:activeQuote.sunatEstado==='ACTIVO'?'#166534':'#b91c1c',fontWeight:600,marginTop:3,display:'block'}}>
+                      SUNAT: {activeQuote.sunatEstado}{activeQuote.sunatCondicion?' · '+activeQuote.sunatCondicion:''}
+                    </small>
+                  )}
+                </label>
+                <label>Dirección fiscal (SUNAT)
+                  <input
+                    placeholder="Se autocompleta al consultar RUC"
+                    value={activeQuote.companyAddress||''}
+                    onChange={e=>setActiveQuote({...activeQuote,companyAddress:e.target.value})}
                   />
                 </label>
                 <label>Atención / Persona de contacto
