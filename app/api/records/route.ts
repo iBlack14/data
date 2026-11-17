@@ -16,7 +16,7 @@ export async function POST(request:Request) {
     const body = await request.json();
     if (!Array.isArray(body) || body.length>1000) throw new Error('Máximo 1000 registros por importación.');
     const rows=body.map((r:any)=>{
-      if (!['company','campaign','territory','settings'].includes(r.kind) || JSON.stringify(r).length>30000) throw new Error('Registro inválido.');
+      if (!['company','campaign','territory','settings','quote'].includes(r.kind) || JSON.stringify(r).length>30000) throw new Error('Registro inválido.');
       const {id,kind,...data}=r;
       if(kind==='company') {
         if(typeof data.name!=='string'||!data.name.trim()||typeof data.country!=='string'||!data.country.trim()) throw new Error('Empresa y país son obligatorios.');

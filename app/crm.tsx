@@ -132,6 +132,7 @@ Atentamente,
 Dirección de Soluciones Cloud & Mesa de Partes Digital
 OdiseaCloud · Infraestructura & Software
 Tel / WhatsApp: +51 994 282 396
+contacto@odiseacloud.com
 https://odiseacloud.com`
   },
   {
@@ -155,6 +156,8 @@ Quedamos atentos a sus comentarios.
 
 Atentamente,
 OdiseaCloud · Sistemas y Soluciones Digitales
+contacto@odiseacloud.com
+Tel / WhatsApp: +51 994 282 396
 https://odiseacloud.com`
   },
   {
@@ -178,6 +181,8 @@ Quedamos a su disposición.
 
 Atentamente,
 OdiseaCloud · Soluciones Digitales
+contacto@odiseacloud.com
+Tel / WhatsApp: +51 994 282 396
 https://odiseacloud.com`
   },
   {
@@ -199,6 +204,8 @@ Queremos presentarles una propuesta de modernización y optimización de su port
 
 Atentamente,
 OdiseaCloud · Soluciones Digitales
+contacto@odiseacloud.com
+Tel / WhatsApp: +51 994 282 396
 https://odiseacloud.com` : `Estimado equipo de ${r.name},
 
 Le saluda el equipo de OdiseaCloud. Notamos la excelente presencia y referencias de su empresa en Google Maps, pero identificamos que aún no cuentan con un portal web propio.
@@ -213,6 +220,8 @@ Hoy en día, más del 80% de clientes potenciales validan la seriedad de una emp
 
 Atentamente,
 OdiseaCloud · Soluciones Digitales
+contacto@odiseacloud.com
+Tel / WhatsApp: +51 994 282 396
 https://odiseacloud.com`
   },
   {
@@ -253,6 +262,7 @@ Atentamente,
 Área de Infraestructura & Identidad Digital
 OdiseaCloud · Soluciones Cloud
 Tel / WhatsApp: +51 994 282 396
+contacto@odiseacloud.com
 https://odiseacloud.com`;
       }
 
@@ -284,6 +294,7 @@ Atentamente,
 Área de Infraestructura & Identidad Digital
 OdiseaCloud · Soluciones Cloud
 Tel / WhatsApp: +51 994 282 396
+contacto@odiseacloud.com
 https://odiseacloud.com`;
       }
 
@@ -312,6 +323,7 @@ Atentamente,
 Área de Infraestructura & Identidad Digital
 OdiseaCloud · Soluciones Cloud
 Tel / WhatsApp: +51 994 282 396
+contacto@odiseacloud.com
 https://odiseacloud.com`;
     }
   },
@@ -334,6 +346,8 @@ Queremos presentarles nuestra solución de Catálogo Digital y Tienda Online con
 
 Atentamente,
 OdiseaCloud · Soluciones Digitales
+contacto@odiseacloud.com
+Tel / WhatsApp: +51 994 282 396
 https://odiseacloud.com`
   },
   {
@@ -356,6 +370,8 @@ Quedamos atentos a sus comentarios.
 
 Atentamente,
 OdiseaCloud · Soluciones Digitales
+contacto@odiseacloud.com
+Tel / WhatsApp: +51 994 282 396
 https://odiseacloud.com`
   }
 ];
@@ -551,136 +567,57 @@ function generateWhatsAppQuoteText(q: Row) {
   text += `\n_Adjuntamos también la Hoja Anexa de Especificaciones Técnicas y Metodología._\n`;
 
   text += `\nQuedamos atentos a cualquier consulta para dar inicio al proyecto.\n\n`;
-  text += `Atentamente,\n*OdiseaCloud · Soluciones Digitales*\nhttps://odiseacloud.com`;
+  text += `Atentamente,\n*OdiseaCloud · Soluciones Digitales*\ncontacto@odiseacloud.com\nTel / WhatsApp: +51 994 282 396\nhttps://odiseacloud.com`;
   return text;
 }
 
-function generateHtmlQuoteEmail(q: Row) {
-  const currencyName = q.currency === 'USD' ? 'USD (Dólares Americanos)' : 'PEN (Soles)';
+async function generateHtmlQuoteEmail(q: Row) {
+  const [{ createRoot }, { flushSync }] = await Promise.all([
+    import('react-dom/client'),
+    import('react-dom'),
+  ]);
+  const renderHost = document.createElement('div');
+  const renderRoot = createRoot(renderHost);
+  let markup = '';
+  try {
+    flushSync(() => renderRoot.render(
+      <QuoteDocument quote={q as unknown as Quote} getSpecification={getServiceAnnexDetails} />
+    ));
+    markup = renderHost.innerHTML;
+  } finally {
+    renderRoot.unmount();
+  }
+  const absoluteAssets = markup.replace(/src="\/assets\/images\//g, 'src="https://odiseacloud.com/assets/images/');
+  const quoteStyles = Array.from(document.styleSheets).flatMap(stylesheet => {
+    try { return Array.from(stylesheet.cssRules).map(rule => rule.cssText); }
+    catch { return []; }
+  }).filter(rule => rule.includes('quote-document') || rule.includes('.qd-')).join('\n');
 
-  const itemsHtml = (q.items || []).map((item: any, idx: number) => `
-    <tr style="border-bottom: 1px solid #e5e7eb;">
-      <td style="padding: 12px 14px; color: #6b7280; font-size: 13px; text-align: center;">${idx + 1}</td>
-      <td style="padding: 12px 14px; color: #111827; font-size: 13px;">
-        <strong style="color: #166534; display: block; font-size: 14px;">${item.name || item.description}</strong>
-        ${item.detail ? `<div style="color: #4b5563; font-size: 12px; margin-top: 4px; line-height: 1.5;">${item.detail}</div>` : ''}
-      </td>
-      <td style="padding: 12px 14px; color: #374151; font-size: 13px; text-align: center;">${item.quantity || 1}</td>
-      <td style="padding: 12px 14px; color: #374151; font-size: 13px; text-align: right; white-space: nowrap;">${formatMoney(item.price, q.currency)}</td>
-      <td style="padding: 12px 14px; color: #166534; font-size: 13px; font-weight: 700; text-align: right; white-space: nowrap;">${formatMoney(item.total, q.currency)}</td>
-    </tr>
-  `).join('');
+  return `<!doctype html><html lang="es"><head><meta charset="utf-8" />
+    <style>${quoteStyles}</style></head><body style="margin:0;background:#fff;color:#25332e;">
+    <div style="box-sizing:border-box;max-width:794px;margin:0 auto;padding:36px 44px;font-family:Arial,sans-serif;line-height:1.5;">
+      ${absoluteAssets}
+    </div></body></html>`;
+}
 
-  return `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 680px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
-      <div style="background: #1c6c53; color: #ffffff; padding: 28px 32px;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td>
-              <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">odisea<span style="font-weight: 400;">cloud</span></h1>
-              <div style="font-size: 11px; opacity: 0.85; letter-spacing: 1.5px; margin-top: 4px;">PROPUESTA & COTIZACIÓN COMERCIAL</div>
-            </td>
-            <td style="text-align: right; vertical-align: top;">
-              <div style="font-size: 18px; font-weight: 800; font-family: monospace;">${q.code}</div>
-              <div style="font-size: 12px; opacity: 0.9; margin-top: 4px;">Fecha: ${q.date}</div>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-      <div style="padding: 24px 32px; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-          <tr>
-            <td style="width: 55%; vertical-align: top;">
-              <div style="font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">PREPARADO PARA:</div>
-              <div style="font-size: 16px; font-weight: 700; color: #111827; margin-top: 4px;">${q.companyName}</div>
-              ${q.contactPerson ? `<div style="color: #4b5563; margin-top: 2px;">Atención: ${q.contactPerson}</div>` : ''}
-              ${q.companyEmail ? `<div style="color: #4b5563; margin-top: 2px;">Email: ${q.companyEmail}</div>` : ''}
-              ${q.companyPhone ? `<div style="color: #4b5563; margin-top: 2px;">Teléfono: ${q.companyPhone}</div>` : ''}
-            </td>
-            <td style="width: 45%; vertical-align: top; text-align: right;">
-              <div style="font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">EMITIDO POR:</div>
-              <div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 4px;">OdiseaCloud · Soluciones Digitales</div>
-              <div style="color: #4b5563; margin-top: 2px;">contacto@odiseacloud.com</div>
-              <div style="color: #4b5563; margin-top: 2px;">https://odiseacloud.com</div>
-              <div style="color: #166534; font-weight: 600; margin-top: 6px;">Validez: ${q.validityDays || 15} días calendario</div>
-            </td>
-          </tr>
-        </table>
-      </div>
-
-      <div style="padding: 24px 32px;">
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-          <thead>
-            <tr style="background: #f3f4f6; text-align: left; font-size: 11px; font-weight: 700; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px;">
-              <th style="padding: 10px 14px; width: 30px; text-align: center;">#</th>
-              <th style="padding: 10px 14px;">Descripción del Servicio</th>
-              <th style="padding: 10px 14px; width: 50px; text-align: center;">Cant.</th>
-              <th style="padding: 10px 14px; width: 100px; text-align: right;">P. Unit.</th>
-              <th style="padding: 10px 14px; width: 110px; text-align: right;">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsHtml}
-          </tbody>
-        </table>
-
-        <table style="width: 100%; border-collapse: collapse; margin-top: 16px;">
-          <tr>
-            <td style="width: 55%; vertical-align: top; font-size: 12px; color: #4b5563; padding-right: 20px;">
-              <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px;">
-                <strong style="color: #111827; display: block; margin-bottom: 6px;">Condiciones Comerciales:</strong>
-                <div>• <strong>Forma de pago:</strong> ${q.paymentTerms || '50% de anticipo y 50% contra entrega conforme.'}</div>
-                ${q.deliveryTime ? `<div>• <strong>Tiempo de entrega:</strong> ${q.deliveryTime}</div>` : ''}
-                <div style="margin-top: 8px; font-size: 11px; color: #6b7280;">Moneda: ${currencyName}</div>
-              </div>
-            </td>
-            <td style="width: 45%; vertical-align: top;">
-              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                <tr>
-                  <td style="padding: 6px 0; color: #4b5563;">Subtotal:</td>
-                  <td style="padding: 6px 0; text-align: right; font-weight: 600; color: #111827;">${formatMoney(q.subtotal, q.currency)}</td>
-                </tr>
-                ${q.includeIgv ? `
-                  <tr>
-                    <td style="padding: 6px 0; color: #4b5563;">I.G.V. (18%):</td>
-                    <td style="padding: 6px 0; text-align: right; font-weight: 600; color: #111827;">${formatMoney(q.igv, q.currency)}</td>
-                  </tr>
-                ` : ''}
-                <tr style="border-top: 2px solid #1c6c53;">
-                  <td style="padding: 10px 0; font-size: 16px; font-weight: 800; color: #1c6c53;">Total:</td>
-                  <td style="padding: 10px 0; text-align: right; font-size: 18px; font-weight: 800; color: #1c6c53;">${formatMoney(q.total, q.currency)}</td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-
-        <div style="margin-top: 24px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; font-size: 12px; color: #166534;">
-          <strong style="display: block; font-size: 13px; margin-bottom: 6px;">✦ Lo Que Te Garantiza OdiseaCloud (Incluido Sin Costo Adicional):</strong>
-          <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; color: #1e293b;">
-            <tr>
-              <td style="padding: 3px 0;">✓ Diseño 100% responsivo y ultra veloz (&lt; 1.5s)</td>
-              <td style="padding: 3px 0;">✓ Botón directo a WhatsApp para ventas</td>
-            </tr>
-            <tr>
-              <td style="padding: 3px 0;">✓ Candado de seguridad SSL permanente (https://)</td>
-              <td style="padding: 3px 0;">✓ Eres 100% dueño de tu dominio y código</td>
-            </tr>
-            <tr>
-              <td style="padding: 3px 0;">✓ Capacitación en video paso a paso</td>
-              <td style="padding: 3px 0;">✓ 30 días de soporte técnico continuo</td>
-            </tr>
-          </table>
-        </div>
-
-        <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px; line-height: 1.6;">
-          Quedamos a su entera disposición para resolver cualquier inquietud y dar inicio al desarrollo.<br/>
-          <strong style="color: #111827;">OdiseaCloud · Soluciones Digitales</strong> | <a href="https://odiseacloud.com" style="color: #1c6c53; text-decoration: none;">https://odiseacloud.com</a>
-        </div>
-      </div>
-    </div>
-  `;
+function generateQuoteEmailText(q: Row) {
+  const lines = [
+    `COTIZACIÓN COMERCIAL · ${q.code || ''}`,
+    `Cliente: ${q.companyName || 'Cliente'}`,
+    `Fecha: ${q.date || ''} · Vigencia: ${q.validityDays || 15} días`,
+    '',
+    'SERVICIOS',
+  ];
+  for (const [index, item] of (q.items || []).entries()) {
+    lines.push(`${index + 1}. ${item.name || item.description} · ${item.quantity || 1} × ${formatMoney(item.price, q.currency)} · ${formatMoney(item.total, q.currency)}`);
+    if (item.detail) lines.push(item.detail);
+  }
+  lines.push('', `Subtotal: ${formatMoney(q.subtotal, q.currency)}`);
+  if (q.includeIgv) lines.push(`IGV (18%): ${formatMoney(q.igv, q.currency)}`);
+  lines.push(`TOTAL: ${formatMoney(q.total, q.currency)}`, '', `Forma de pago: ${q.paymentTerms || '50% de adelanto para programar el inicio del servicio y 50% contra entrega y conformidad del cliente.'}`);
+  if (q.deliveryTime) lines.push(`Plazo de entrega: ${q.deliveryTime}`);
+  lines.push('', 'Medios de pago', 'BCP - Cuenta de ahorro soles: 30594735991005', 'CCI: 00230519473599100517', 'Interbank - Cuenta simple soles: 898 3391628639', 'CCI: 003-898-013391628639-45', 'Yape: 953 576 234', '', 'OdiseaCloud · Soluciones Digitales', 'odiseacloud.com · contacto@odiseacloud.com · +51 994 282 396');
+  return lines.join('\n');
 }
 
 type Row=Record<string,any>;
@@ -741,7 +678,7 @@ function renderWithLinks(text:string){
 export default function CRM(){
   const [prospectOpen,setProspectOpen]=useState(false);
   const [selectedPhone,setSelectedPhone]=useState('');
-  const [tab,setTab]=useState('Resumen'),[rows,setRows]=useState<Row[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[toast,setToast]=useState(''),[query,setQuery]=useState(''),[filters,setFilters]=useState<Row>({country:'',region:'',province:'',district:'',sector:'',contact:'',stage:''}),[page,setPage]=useState(1),[pageSize,setPageSize]=useState(50),[editor,setEditor]=useState<Row|null>(null),[saving,setSaving]=useState(false),[selected,setSelected]=useState<Row|null>(null),[territory,setTerritory]=useState<Row>({country:'Perú',region:'Lima',province:'Lima',city:'Lima',district:'',sector:''}),[campaign,setCampaign]=useState<Row>({name:'Propuesta General',service:'',channel:'Correo',subject:'Propuesta de impulso digital para {{empresa}}',message:'Estimado equipo de {{empresa}},\n\nLe saluda el equipo de OdiseaCloud. Nos comunicamos porque estuvimos revisando su presencia digital y queremos presentarles soluciones tecnológicas a medida para potenciar su visibilidad y captación comercial (diseño y reestructuración web, correos corporativos y automatizaciones).\n\n¿Tendrían disponibilidad para una breve conversación esta semana?\n\nQuedamos atentos a sus comentarios.\n\nAtentamente,\nOdiseaCloud · Soluciones Digitales\nhttps://odiseacloud.com'}),[contactMessage,setContactMessage]=useState(''),[contactSubject,setContactSubject]=useState(''),[activeTemplateId,setActiveTemplateId]=useState('sistemas_mesa');
+  const [tab,setTab]=useState('Resumen'),[rows,setRows]=useState<Row[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[toast,setToast]=useState(''),[query,setQuery]=useState(''),[filters,setFilters]=useState<Row>({country:'',region:'',province:'',district:'',sector:'',contact:'',stage:''}),[page,setPage]=useState(1),[pageSize,setPageSize]=useState(50),[editor,setEditor]=useState<Row|null>(null),[saving,setSaving]=useState(false),[selected,setSelected]=useState<Row|null>(null),[territory,setTerritory]=useState<Row>({country:'Perú',region:'Lima',province:'Lima',city:'Lima',district:'',sector:''}),[campaign,setCampaign]=useState<Row>({name:'Propuesta General',service:'',channel:'Correo',subject:'Propuesta de impulso digital para {{empresa}}',message:'Estimado equipo de {{empresa}},\n\nLe saluda el equipo de OdiseaCloud. Nos comunicamos porque estuvimos revisando su presencia digital y queremos presentarles soluciones tecnológicas a medida para potenciar su visibilidad y captación comercial (diseño y reestructuración web, correos corporativos y automatizaciones).\n\n¿Tendrían disponibilidad para una breve conversación esta semana?\n\nQuedamos atentos a sus comentarios.\n\nAtentamente,\nOdiseaCloud · Soluciones Digitales\ncontacto@odiseacloud.com\nTel / WhatsApp: +51 994 282 396\nhttps://odiseacloud.com'}),[contactMessage,setContactMessage]=useState(''),[contactSubject,setContactSubject]=useState(''),[activeTemplateId,setActiveTemplateId]=useState('sistemas_mesa');
 
   // Email Accounts State
   const [emailAccounts,setEmailAccounts]=useState<Row[]>([]);
@@ -774,8 +711,8 @@ export default function CRM(){
   // Quote State
   const [activeQuote, setActiveQuote] = useState<Row | null>(null);
   const [quotePreview, setQuotePreview] = useState<Row | null>(null);
+  const [downloadingQuotePdf, setDownloadingQuotePdf] = useState(false);
   const [sendingQuoteEmail, setSendingQuoteEmail] = useState(false);
-  const [quoteLookupQuery, setQuoteLookupQuery] = useState('');
   const [rucSearching, setRucSearching] = useState(false);
   const [rucResults, setRucResults] = useState<any[]>([]);
 
@@ -805,7 +742,7 @@ export default function CRM(){
       currency: 'PEN',
       includeIgv: false,
       deliveryTime: '7 a 10 días hábiles',
-      paymentTerms: '50% anticipo al iniciar y 50% contra entrega conforme.',
+      paymentTerms: '50% de adelanto para programar el inicio del servicio y 50% contra entrega y conformidad del cliente. Los pagos se realizan en soles (PEN), salvo acuerdo escrito distinto.',
       items: [
         {
           id: crypto.randomUUID(),
@@ -822,15 +759,16 @@ export default function CRM(){
       status: 'Borrador',
       notes: ''
     };
-    // Solo pre-llena el buscador con el nombre, no el RUC (el RUC ya está en el campo RUC)
-    setQuoteLookupQuery((!company?.ruc && company?.name) ? company.name : '');
     setActiveQuote(newQ);
   }
 
-  async function lookupQuoteRuc() {
+  async function lookupQuoteRuc(overrideQuery?: string) {
     if (!activeQuote) return;
-    const query = quoteLookupQuery.trim();
-    if (!query) return;
+    const query = (overrideQuery || activeQuote.ruc || activeQuote.companyName || '').trim();
+    if (!query) {
+      setToast('⚠️ Ingresa un RUC o nombre de empresa para consultar.');
+      return;
+    }
     setRucSearching(true);
     setRucResults([]);
     try {
@@ -838,11 +776,9 @@ export default function CRM(){
       const data = await res.json() as any;
       if (data.error) { setToast('⚠️ ' + data.error); return; }
       if (data.results) {
-        // Búsqueda por razón social → mostrar lista para elegir
         setRucResults(data.results);
-        if (data.results.length === 0) setToast('No se encontraron empresas con ese nombre.');
+        if (data.results.length === 0) setToast('No se encontraron empresas con ese nombre en SUNAT.');
       } else {
-        // RUC exacto → autocompletar directamente
         applyRucResult(data);
       }
     } catch (e: any) {
@@ -862,7 +798,6 @@ export default function CRM(){
       sunatCondicion: d.condicion || '',
     } : cur);
     setRucResults([]);
-    setQuoteLookupQuery(''); // ← limpia el campo de búsqueda
     setToast(`✅ ${d.nombre} — ${d.estado}${d.condicion ? ' · ' + d.condicion : ''}`);
   }
 
@@ -959,6 +894,183 @@ export default function CRM(){
     setActiveQuote(null);
   }
 
+  async function downloadQuotePdf(q: Row) {
+    if (downloadingQuotePdf) return;
+    setDownloadingQuotePdf(true);
+    setToast('Preparando el PDF...');
+    let staging: HTMLDivElement | null = null;
+
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
+      await document.fonts.ready;
+
+      const source = document.querySelector('#printable-quote .quote-document');
+      if (!(source instanceof HTMLElement)) throw new Error('No se encontró la cotización para exportar.');
+
+      staging = document.createElement('div');
+      staging.className = 'quote-pdf-export';
+      staging.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(staging);
+
+      const pages: HTMLDivElement[] = [];
+      const makePage = () => {
+        const page = document.createElement('div');
+        page.className = 'quote-pdf-page quote-document';
+        staging!.appendChild(page);
+        pages.push(page);
+        return page;
+      };
+      const appendCopy = (page: HTMLElement, element: Element | null) => {
+        if (element) page.appendChild(element.cloneNode(true));
+      };
+      const firstPage = makePage();
+      ['.qd-client', '.qd-introduction', '.qd-table', '.qd-totals'].forEach(selector => {
+        appendCopy(firstPage, source.querySelector(selector));
+      });
+
+      const maxPageHeightPx = (249 / 25.4) * 96;
+      const annex = source.querySelector('.qd-annex');
+      if (!annex) throw new Error('No se encontró el anexo técnico.');
+      let currentPage = makePage();
+      const annexIntro = Array.from(annex.children).filter(element =>
+        element.matches('.qd-label, .qd-annex-title') || element.tagName === 'P'
+      );
+      annexIntro.forEach(element => appendCopy(currentPage, element));
+
+      const addAnnexBlock = (element: Element, showContinuationHeading = true) => {
+        const copy = element.cloneNode(true);
+        currentPage.appendChild(copy);
+        if (currentPage.scrollHeight > maxPageHeightPx && currentPage.children.length > 1) {
+          currentPage.removeChild(copy);
+          currentPage = makePage();
+          if (showContinuationHeading) {
+            const continuation = document.createElement('p');
+            continuation.className = 'qd-label';
+            continuation.textContent = 'Anexo técnico · Continuación';
+            currentPage.appendChild(continuation);
+          }
+          currentPage.appendChild(copy);
+        }
+      };
+      Array.from(annex.querySelectorAll(':scope > .qd-service')).forEach(element => addAnnexBlock(element));
+      const notes = annex.querySelector(':scope > .qd-notes');
+      if (notes) addAnnexBlock(notes);
+      const commercial = annex.querySelector(':scope > .qd-commercial');
+      if (commercial) {
+        Array.from(currentPage.children).find(element =>
+          element.textContent?.trim() === 'Anexo técnico · Continuación'
+        )?.remove();
+        addAnnexBlock(commercial, false);
+      }
+
+      const waitForImages = async (root: HTMLElement) => {
+        await Promise.all(Array.from(root.querySelectorAll('img')).map(image => {
+          const img = image as HTMLImageElement;
+          if (img.complete) return Promise.resolve();
+          return new Promise<void>(resolve => {
+            img.addEventListener('load', () => resolve(), { once: true });
+            img.addEventListener('error', () => resolve(), { once: true });
+          });
+        }));
+      };
+      await waitForImages(staging);
+
+      const imageToPng = async (path: string) => {
+        const image = new Image();
+        image.src = path;
+        await new Promise<void>((resolve, reject) => {
+          if (image.complete && image.naturalWidth) return resolve();
+          image.onload = () => resolve();
+          image.onerror = () => reject(new Error(`No se pudo cargar ${path}`));
+        });
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('No se pudo preparar la imagen del documento.');
+        context.drawImage(image, 0, 0);
+        return { dataUrl: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height };
+      };
+      const [logoImage, mascotImage] = await Promise.all([
+        imageToPng('/assets/images/logo.webp'),
+        imageToPng('/assets/images/mascota-izquierda.webp'),
+      ]);
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+      for (let index = 0; index < pages.length; index++) {
+        if (index > 0) pdf.addPage('a4', 'portrait');
+        const canvas = await html2canvas(pages[index], {
+          scale: 2.5,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          logging: false,
+          windowWidth: 900,
+        });
+        const jpeg = canvas.toDataURL('image/jpeg', 0.96);
+        const fit = Math.min(180 / canvas.width, 245 / canvas.height);
+        const contentWidth = canvas.width * fit;
+        const contentHeight = canvas.height * fit;
+        const contentX = 15 + (180 - contentWidth) / 2;
+        pdf.addImage(jpeg, 'JPEG', contentX, 30, contentWidth, contentHeight, undefined, 'FAST');
+
+        const logoWidth = 12;
+        const logoHeight = logoWidth * logoImage.height / logoImage.width;
+        pdf.addImage(logoImage.dataUrl, 'PNG', 15, 3, logoWidth, logoHeight);
+        pdf.setTextColor(37, 51, 46);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(6.5);
+        pdf.text('Soluciones Digitales & Infraestructura Cloud', 15, 13.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(5.8);
+        pdf.setTextColor(100, 116, 107);
+        pdf.text('odiseacloud.com | contacto@odiseacloud.com', 15, 18);
+        pdf.text('Tel / WhatsApp: +51 994 282 396 | Lima, Perú', 15, 22.5);
+        pdf.setDrawColor(203, 213, 206);
+        pdf.setLineWidth(0.25);
+        pdf.line(15, 26, 195, 26);
+        pdf.setTextColor(36, 76, 56);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(5.5);
+        pdf.text('COTIZACIÓN COMERCIAL', 195, 4.5, { align: 'right' });
+        pdf.setFontSize(10);
+        pdf.text(String(q.code || ''), 195, 11, { align: 'right' });
+        pdf.setTextColor(54, 74, 61);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(5.5);
+        pdf.text(`Emisión: ${q.date || ''}`, 195, 15.5, { align: 'right' });
+        pdf.text(`Vigencia: ${q.validityDays || 15} días`, 195, 20, { align: 'right' });
+        pdf.text(`Estado: ${q.status || 'Borrador'}`, 195, 24.5, { align: 'right' });
+
+        pdf.setDrawColor(203, 213, 206);
+        pdf.line(15, 277, 195, 277);
+        pdf.setTextColor(102, 117, 107);
+        pdf.setFontSize(5.8);
+        pdf.text('OdiseaCloud | Lima, Perú | odiseacloud.com | contacto@odiseacloud.com | +51 994 282 396', 15, 283);
+        pdf.setTextColor(36, 76, 56);
+        pdf.setFontSize(6.5);
+        pdf.text(`${index + 1} / ${pages.length}`, 181, 289, { align: 'right' });
+        const mascotWidth = 10;
+        const mascotHeight = mascotWidth * mascotImage.height / mascotImage.width;
+        pdf.addImage(mascotImage.dataUrl, 'PNG', 185, 291 - mascotHeight, mascotWidth, mascotHeight);
+        canvas.width = 0;
+        canvas.height = 0;
+      }
+
+      const slug = String(q.companyName || 'cliente').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48).toLowerCase();
+      pdf.save(`${q.code || 'cotizacion'}-${slug || 'cliente'}.pdf`);
+      setToast('PDF descargado correctamente.');
+    } catch (error) {
+      setToast(error instanceof Error ? `No se pudo descargar el PDF: ${error.message}` : 'No se pudo descargar el PDF.');
+    } finally {
+      staging?.remove();
+      setDownloadingQuotePdf(false);
+    }
+  }
+
   async function sendQuoteViaEmail(q: Row) {
     if (!q.companyEmail) {
       setToast('La cotización no tiene correo de destinatario.');
@@ -979,8 +1091,8 @@ export default function CRM(){
           accountId: accId,
           to: q.companyEmail,
           subject,
-          message: generateWhatsAppQuoteText(q),
-          html: generateHtmlQuoteEmail(q),
+          message: generateQuoteEmailText(q),
+          html: await generateHtmlQuoteEmail(q),
           companyId: q.companyId
         })
       });
@@ -2526,7 +2638,7 @@ export default function CRM(){
                               type="button" 
                               className="iconbutton" 
                               title="Editar cotización" 
-                              onClick={()=>{setQuoteLookupQuery(q.ruc||q.companyName||'');setActiveQuote(q);}}
+                              onClick={()=>setActiveQuote(q)}
                             >
                               <Edit3 size={15}/>
                             </button>
@@ -2633,9 +2745,9 @@ export default function CRM(){
       const availablePhones = extractAllPhones(selected);
       const activePhone = selectedPhone || selected.phone || availablePhones[0] || '';
 
-      return <div className="modalback">
-      <section className="modal detail" role="dialog" aria-modal="true" aria-label={selected.name}>
-        <div className="sectionhead">
+      return <div className="modalback detail-modalback">
+      <section className="modal detail detail-modal" role="dialog" aria-modal="true" aria-label={selected.name}>
+        <div className="sectionhead detail-modal-head">
           <div>
             <div className="eyebrow">OPORTUNIDAD COMERCIAL</div>
             <h2>{selected.name}</h2>
@@ -2643,6 +2755,7 @@ export default function CRM(){
           <button className="iconbutton" aria-label="Cerrar detalle" onClick={()=>setSelected(null)}><X/></button>
         </div>
 
+        <div className="detail-modal-content">
         {/* Panel de Estado Visual Destacado */}
         <div style={{
           background: isContacted ? '#ecfdf5' : '#f8fafc',
@@ -2781,26 +2894,26 @@ export default function CRM(){
         </div>
 
         {/* Selector de Enfoque de Propuesta (Mesa de partes, Automatización, etc.) */}
-        <div style={{margin:'8px 0 12px',background:'#fafcf9',border:'1px solid #dfe9de',borderRadius:9,padding:'10px 14px'}}>
-          <div style={{fontSize:11,fontWeight:700,color:'#2d4734',marginBottom:8,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:6}}>
-            <span>🎯 ENFOQUE DE TU PROPUESTA:</span>
+        <div className="pitch-picker">
+          <div className="pitch-picker-head">
+            <span className="pitch-picker-title">🎯 ENFOQUE DE TU PROPUESTA</span>
             {selected.web ? (
               <a 
                 href={selected.web.startsWith('http') ? selected.web : `https://${selected.web}`}
                 target="_blank" 
                 rel="noopener noreferrer"
-                style={{fontSize:10,color:'#15803d',background:'#dcfce7',border:'1px solid #86efac',padding:'3px 9px',borderRadius:10,fontWeight:600,textDecoration:'none',display:'inline-flex',alignItems:'center',gap:4}}
+                className="pitch-site-link"
                 title="Abrir sitio web oficial en nueva pestaña"
               >
                 ✓ Visitar web oficial ({selected.web.replace(/^https?:\/\//i,'').split('/')[0]}) <ArrowUpRight size={11}/>
               </a>
             ) : (
-              <span style={{fontSize:10,color:'#b45309',background:'#fef3c7',border:'1px solid #fde68a',padding:'2px 8px',borderRadius:10,fontWeight:600}}>
+              <span className="pitch-site-missing">
                 ⚠️ Sin sitio web registrado
               </span>
             )}
           </div>
-          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+          <div className="pitch-options">
             {PITCH_TEMPLATES.map(tpl=>{
               const active = activeTemplateId === tpl.id;
               const badge = typeof tpl.badge === 'function' ? tpl.badge(selected) : tpl.badge;
@@ -2809,30 +2922,11 @@ export default function CRM(){
                   key={tpl.id}
                   type="button"
                   onClick={()=>selectPitchTemplate(tpl.id,selected)}
-                  style={{
-                    border: active ? '1.5px solid #236c50' : '1px solid #d5ded6',
-                    background: active ? '#236c50' : '#fff',
-                    color: active ? '#fff' : '#334f3c',
-                    fontWeight: active ? 700 : 500,
-                    padding: '6px 11px',
-                    borderRadius: 6,
-                    fontSize: 11,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    cursor: 'pointer',
-                    boxShadow: active ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                  }}
+                  className={`pitch-option${active ? ' active' : ''}`}
                 >
                   {tpl.name}
                   {badge&&(
-                    <span style={{
-                      fontSize: 9,
-                      background: active ? '#1a523c' : '#f0f5ee',
-                      color: active ? '#a7f3d0' : '#4f6b57',
-                      padding: '1px 5px',
-                      borderRadius: 4
-                    }}>
+                    <span className="pitch-option-badge">
                       {badge}
                     </span>
                   )}
@@ -3029,26 +3123,6 @@ export default function CRM(){
             </button>
           )}
 
-          {/* Botón Cliente Externo de Correo */}
-          <button 
-            type="button" 
-            className="button" 
-            style={{
-              background: hasContactedEmail ? '#f0f9ff' : '#fff',
-              borderColor: hasContactedEmail ? '#0284c7' : '#dfe7e1',
-              color: hasContactedEmail ? '#0369a1' : '#4b6255',
-              fontWeight: hasContactedEmail ? 700 : 500
-            }}
-            disabled={!selected.email||selected.suppressed} 
-            onClick={()=>{
-              const subj = (contactSubject || campaign.subject).replaceAll('{{empresa}}', selected.name);
-              location.href='mailto:'+encodeURIComponent(selected.email)+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(contactMessage);
-              markAsContacted(selected, 'Cliente de correo externo', false);
-            }}
-          >
-            {hasContactedEmail ? <Check size={15}/> : <Mail size={15}/>} 
-            {hasContactedEmail ? '✓ Correo ya abierto (Volver a abrir)' : 'Abrir en cliente de correo'}
-          </button>
         </div>
 
         <p className="hint">Puedes enviar por WhatsApp y también por Correo en la misma ficha sin que se cierre. Ambas acciones quedarán registradas.</p>
@@ -3088,6 +3162,7 @@ export default function CRM(){
             </button>
           </div>
         </div>
+        </div>
       </section>
     </div>;
     })()}
@@ -3120,53 +3195,58 @@ export default function CRM(){
                     value={activeQuote.companyName || ''} 
                     onChange={e=>setActiveQuote({...activeQuote,companyName:e.target.value})}
                   />
-                </label>
-                <label>Buscar por RUC o razón social (SUNAT)
-                  <div style={{display:'flex',gap:6}}>
-                    <input
-                      placeholder="RUC (11 dígitos) o razón social"
-                      value={quoteLookupQuery}
-                      onChange={e=>{setQuoteLookupQuery(e.target.value);setRucResults([]);}}
-                      onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();lookupQuoteRuc();}}}
-                    />
-                    <button type="button" className="button" onClick={lookupQuoteRuc}
-                      disabled={!quoteLookupQuery.trim()||rucSearching}
-                      style={{whiteSpace:'nowrap',minWidth:90}}>
-                      {rucSearching ? '⏳ Buscando…' : <><Search size={14}/> Consultar</>}
-                    </button>
-                  </div>
-                  {rucResults.length>0 && (
-                    <div style={{border:'1px solid #d1fae5',borderRadius:8,marginTop:6,background:'#f0fdf4',maxHeight:220,overflowY:'auto'}}>
-                      {rucResults.map((r,i)=>(
-                        <div key={i}
-                          onClick={()=>applyRucResult(r)}
-                          style={{padding:'8px 12px',cursor:'pointer',borderBottom:'1px solid #d1fae5',fontSize:13,display:'flex',flexDirection:'column',gap:2}}
-                          onMouseEnter={e=>(e.currentTarget.style.background='#dcfce7')}
-                          onMouseLeave={e=>(e.currentTarget.style.background='')}>
-                          <strong style={{color:'#166534'}}>{r.nombre}</strong>
-                          <span style={{color:'#64748b',fontSize:11}}>RUC {r.ruc} · {r.estado} · {r.distrito}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <small style={{color:'#64748b',lineHeight:1.5,marginTop:4,display:'block'}}>
-                    Consulta directa a SUNAT. Escribe el RUC exacto (11 dígitos) o la razón social para buscar.
-                  </small>
-                </label>
-                <label>RUC
-                  <input
-                    inputMode="numeric"
-                    maxLength={11}
-                    placeholder="11 dígitos"
-                    value={activeQuote.ruc || ''}
-                    onChange={e=>setActiveQuote({...activeQuote,ruc:e.target.value.replace(/\D/g,'').slice(0,11)})}
-                  />
-                  {activeQuote.sunatEstado && (
-                    <small style={{color:activeQuote.sunatEstado==='ACTIVO'?'#166534':'#b91c1c',fontWeight:600,marginTop:3,display:'block'}}>
-                      SUNAT: {activeQuote.sunatEstado}{activeQuote.sunatCondicion?' · '+activeQuote.sunatCondicion:''}
+                  {!activeQuote.ruc && activeQuote.companyName && (
+                    <small 
+                      onClick={()=>lookupQuoteRuc(activeQuote.companyName)}
+                      style={{color:'#166534',fontWeight:600,cursor:'pointer',marginTop:4,display:'inline-block'}}
+                    >
+                      🔍 Buscar RUC de esta empresa en SUNAT
                     </small>
                   )}
                 </label>
+                <label>RUC (11 dígitos)
+                  <div style={{display:'flex',gap:6}}>
+                    <input
+                      inputMode="numeric"
+                      maxLength={11}
+                      placeholder="Ej. 20428410301"
+                      value={activeQuote.ruc || ''}
+                      onChange={e=>setActiveQuote({...activeQuote,ruc:e.target.value.replace(/\D/g,'').slice(0,11)})}
+                      onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();lookupQuoteRuc(activeQuote.ruc);}}}
+                    />
+                    <button 
+                      type="button" 
+                      className="button" 
+                      onClick={()=>lookupQuoteRuc(activeQuote.ruc || activeQuote.companyName)} 
+                      disabled={(!activeQuote.ruc && !activeQuote.companyName) || rucSearching}
+                      style={{whiteSpace:'nowrap',minWidth:95}}
+                    >
+                      {rucSearching ? '⏳ Consultando…' : <><Search size={14}/> Consultar SUNAT</>}
+                    </button>
+                  </div>
+                  {activeQuote.sunatEstado && (
+                    <small style={{color:activeQuote.sunatEstado==='ACTIVO'?'#166534':'#b91c1c',fontWeight:600,marginTop:3,display:'block'}}>
+                      ● SUNAT: {activeQuote.sunatEstado}{activeQuote.sunatCondicion?' · '+activeQuote.sunatCondicion:''}
+                    </small>
+                  )}
+                </label>
+                {rucResults.length>0 && (
+                  <div style={{gridColumn:'1 / -1',border:'1px solid #d1fae5',borderRadius:8,marginBottom:8,background:'#f0fdf4',maxHeight:220,overflowY:'auto'}}>
+                    <div style={{padding:'6px 12px',background:'#dcfce7',fontSize:11,fontWeight:700,color:'#166534'}}>
+                      Selecciona la empresa oficial en SUNAT:
+                    </div>
+                    {rucResults.map((r,i)=>(
+                      <div key={i}
+                        onClick={()=>applyRucResult(r)}
+                        style={{padding:'8px 12px',cursor:'pointer',borderBottom:'1px solid #d1fae5',fontSize:13,display:'flex',flexDirection:'column',gap:2}}
+                        onMouseEnter={e=>(e.currentTarget.style.background='#dcfce7')}
+                        onMouseLeave={e=>(e.currentTarget.style.background='')}>
+                        <strong style={{color:'#166534'}}>{r.nombre}</strong>
+                        <span style={{color:'#64748b',fontSize:11}}>RUC {r.ruc} · {r.estado} {r.condicion ? '· ' + r.condicion : ''}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <label>Dirección fiscal (SUNAT)
                   <input
                     placeholder="Se autocompleta al consultar RUC"
@@ -3232,7 +3312,6 @@ export default function CRM(){
                     }}
                   >
                     <option value="PEN">Soles (S/.) - PEN</option>
-                    <option value="USD">Dólares ($) - USD</option>
                   </select>
                 </label>
                 <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:12,fontWeight:600,color:'#374151',marginTop:22}}>
@@ -3356,7 +3435,7 @@ export default function CRM(){
                   Forma y condiciones de pago:
                   <input 
                     value={activeQuote.paymentTerms || ''} 
-                    placeholder="Ej. 50% anticipo al iniciar y 50% contra entrega conforme."
+                    placeholder="Ej. 50% de adelanto para programar el inicio y 50% contra entrega y conformidad."
                     onChange={e=>setActiveQuote({...activeQuote,paymentTerms:e.target.value})}
                   />
                 </label>
@@ -3542,10 +3621,11 @@ export default function CRM(){
                 type="button" 
                 className="primary" 
                 style={{background:'linear-gradient(135deg, #15803d 0%, #166534 100%)',fontSize:12,padding:'7px 18px',borderRadius:6,fontWeight:800,display:'inline-flex',alignItems:'center',gap:6,border:'1px solid #86efac',boxShadow:'0 4px 12px rgba(22,101,52,0.4)'}}
-                onClick={()=>window.print()}
-                title="Imprimir documento o guardar como PDF oficial"
+                onClick={()=>downloadQuotePdf(quotePreview)}
+                disabled={downloadingQuotePdf}
+                title="Descargar la cotización como archivo PDF"
               >
-                <Printer size={15}/> Imprimir / PDF
+                <Download size={15}/> {downloadingQuotePdf ? 'Generando PDF...' : 'Descargar PDF'}
               </button>
               <button 
                 type="button" 

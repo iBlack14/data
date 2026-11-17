@@ -14,7 +14,7 @@ export async function POST(request:Request) {
     let duplicates=0;
     const incoming=[];
     for(const r of body.results) {
-      if(!r.name||typeof r.name!=='string'||!/^0x[\da-f]+:0x[\da-f]+$/i.test(r.mapsId)||!r.searchTerritory?.country||JSON.stringify(r).length>20000) throw new Error('Resultado inválido. Repite la búsqueda.');
+      if(!r.name||typeof r.name!=='string'||!r.mapsId||typeof r.mapsId!=='string'||!/^(0x[\da-f]+:0x[\da-f]+|org:|bd:|snip:)/i.test(r.mapsId)||!r.searchTerritory?.country||JSON.stringify(r).length>20000) throw new Error('Resultado inválido. Repite la búsqueda.');
       if(known.has(r.mapsId)){duplicates++;continue;}
       const territory=r.searchTerritory;
       const clean:Record<string,any>={};

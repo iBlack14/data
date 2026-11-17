@@ -12,7 +12,7 @@ import {
   cleanPhone
 } from '../lib/peru-localities';
 
-const SWEEP_STORAGE_KEY = 'odisea_sweep_state_v1';
+const SWEEP_STORAGE_KEY = 'odisea_sweep_state_v2';
 
 function saveSweepState(
   queue: TargetLocation[],
@@ -229,6 +229,8 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
   const seenMapsIdsRef = useRef<Set<string>>(new Set());
   const seenPhonesRef = useRef<Set<string>>(new Set());
   const seenNamesRef = useRef<Set<string>>(new Set());
+  const accumulatedRef = useRef<Row[]>([]);
+  const historyRef = useRef<any[]>([]);
 
   // Restaurar barrido interrumpido desde localStorage al cargar o recargar la página
   useEffect(() => {
@@ -248,13 +250,35 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
         if (saved.autoRegion) setAutoRegion(saved.autoRegion);
         if (saved.autoProvince) setAutoProvince(saved.autoProvince);
         if (Array.isArray(saved.autoAccumulated) && saved.autoAccumulated.length > 0) {
+          accumulatedRef.current = saved.autoAccumulated;
           setAutoAccumulated(saved.autoAccumulated);
           setResults(saved.autoAccumulated);
           for (const item of saved.autoAccumulated) {
             registerSeenRecord(item, seenMapsIdsRef.current, seenPhonesRef.current, seenNamesRef.current);
           }
         }
-        if (Array.isArray(saved.autoHistory)) setAutoHistory(saved.autoHistory);
+        if (Array.isArray(saved.autoHistory)) {
+          setAutoHistory(saved.autoHistory);
+          historyRef.current = saved.autoHistory;
+          // Recuperar empresas que el autoguardado pudo truncar: el historial por distrito
+          // conserva todas las filas procesadas, así que si suma más que autoAccumulated
+          // reconstruimos la lista completa desde ahí.
+          const histRows = saved.autoHistory.flatMap((h: any) => Array.isArray(h?.rows) ? h.rows : []);
+          if (histRows.length > accumulatedRef.current.length) {
+            const seen = new Set<string>();
+            const merged = histRows.filter((r: Row) => {
+              const k = r.mapsId || r.phone || r.name;
+              if (seen.has(k)) return false;
+              seen.add(k); return true;
+            });
+            accumulatedRef.current = merged;
+            setAutoAccumulated(merged);
+            setResults(merged);
+            for (const item of merged) {
+              registerSeenRecord(item, seenMapsIdsRef.current, seenPhonesRef.current, seenNamesRef.current);
+            }
+          }
+        }
 
         const lastTarget = saved.queue[saved.currentIndex];
         const targetName = saved.interruptedTarget || lastTarget?.label || `${lastTarget?.district} (${lastTarget?.region})`;
@@ -432,6 +456,8 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
       setResults([]);
       setAutoHistory([]);
       setAutoAccumulated([]);
+      accumulatedRef.current = [];
+      historyRef.current = [];
     }
 
     if(!queue.length){
@@ -520,14 +546,18 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
             const fileLoc = target.locality ? `${target.district}_${target.locality}` : target.district;
             downloadRowsCSV(districtResults, sectorName, `${target.region}_${target.province}_${fileLoc}`, 'prospectos');
           }
-          setAutoHistory(prev=>[{district:targetLabel,count:districtResults.length,downloaded:autoDownloadCSV,rows:districtResults},...prev]);
-          setAutoAccumulated(prev=>[...prev,...districtResults]);
+          const histEntry = {district:targetLabel,count:districtResults.length,downloaded:autoDownloadCSV,rows:districtResults};
+          historyRef.current = [histEntry, ...historyRef.current];
+          accumulatedRef.current = [...accumulatedRef.current, ...districtResults];
+          setAutoHistory(historyRef.current);
+          setAutoAccumulated(accumulatedRef.current);
           setResults(prev=>[...districtResults,...prev.filter(r=>!districtResults.some(d=>d.mapsId===r.mapsId))]);
           const message = `✅ ${districtProgress}: ${districtResults.length} empresas únicas extraídas${autoDownloadCSV?' · CSV descargado':''}`;
           setProgress(message);
           setAutoProgress(message);
         } else {
-          setAutoHistory(prev=>[{district:targetLabel,count:0,downloaded:false,rows:[]} ,...prev]);
+          historyRef.current = [{district:targetLabel,count:0,downloaded:false,rows:[]}, ...historyRef.current];
+          setAutoHistory(historyRef.current);
           const message = `⚪ ${districtProgress}: 0 nuevas empresas encontradas.`;
           setProgress(message);
           setAutoProgress(message);
@@ -535,7 +565,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
 
         // Guardar progreso en almacenamiento local para no perder datos si se recarga la pestaña
         try {
-          saveSweepState(queue, i + 1, sectorName, autoScope, nationalType, autoRegion, autoProvince, [...autoAccumulated, ...districtResults], [{district:targetLabel,count:districtResults.length,downloaded:autoDownloadCSV,rows:districtResults}, ...autoHistory], targetLabel);
+          saveSweepState(queue, i + 1, sectorName, autoScope, nationalType, autoRegion, autoProvince, accumulatedRef.current, historyRef.current, targetLabel);
         } catch(e){}
 
         // Si hay una siguiente localidad, pausar para proteger la conexión
@@ -601,7 +631,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
         const lastTarget = queue[currentIndexRef.current];
         const lastLabel = lastTarget?.label || `${lastTarget?.district} (${lastTarget?.region})`;
         setInterruptedTarget(lastLabel);
-        saveSweepState(queue, currentIndexRef.current, sectorName, autoScope, nationalType, autoRegion, autoProvince, autoAccumulated, autoHistory, lastLabel);
+        saveSweepState(queue, currentIndexRef.current, sectorName, autoScope, nationalType, autoRegion, autoProvince, accumulatedRef.current, historyRef.current, lastLabel);
       }
       const message = autoDownloadCSV
         ?'Barrido detenido. Los resultados procesados están disponibles en el panel y los CSVs descargados están en tu carpeta de descargas.'
@@ -624,7 +654,11 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
     try{
       const data=await api('import',{results:selected,service});
       await onImported();
-      setProgress(`${data.imported} empresas guardadas · ${data.duplicates} duplicados omitidos.`);
+      const ids=new Set(selected.map((r:Row)=>r.mapsId));
+      setResults(old=>old.filter(r=>!ids.has(r.mapsId)));
+      accumulatedRef.current=accumulatedRef.current.filter(r=>!ids.has(r.mapsId));
+      setAutoAccumulated(old=>old.filter(r=>!ids.has(r.mapsId)));
+      setProgress(`✓ ${data.imported} empresas guardadas en Empresas · ${data.duplicates} duplicados omitidos.`);
       setChosen(new Set());
     }catch(e){
       setError((e as Error).message);
@@ -646,7 +680,11 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
         totalDuplicates+=(data.duplicates||0);
       }
       await onImported();
-      setProgress(`${totalImported} empresas del barrido guardadas en CRM · ${totalDuplicates} duplicados omitidos.`);
+      const ids=new Set(autoAccumulated.map((r:Row)=>r.mapsId));
+      setResults(old=>old.filter(r=>!ids.has(r.mapsId)));
+      accumulatedRef.current=[];
+      setAutoAccumulated([]);
+      setProgress(`✓ ${totalImported} empresas del barrido guardadas en Empresas · ${totalDuplicates} duplicados omitidos.`);
     }catch(e){
       setError((e as Error).message);
     }finally{

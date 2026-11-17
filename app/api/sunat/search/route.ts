@@ -1,129 +1,162 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-const BASE_URL = 'https://www.universidadperu.com';
+const BRIGHT_KEY = process.env.BRIGHTDATA_API_KEY || '4b8bcc63-1cec-43bd-9588-03c834451507';
+const BRIGHT_ZONE = process.env.BRIGHTDATA_ZONE || 'serp_api1';
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q')?.trim() ?? '';
   if (!q) return NextResponse.json({ error: 'Parámetro q requerido' }, { status: 400 });
 
+  const digits = q.replace(/\D/g, '');
+  const isRuc = digits.length === 11;
+
   try {
-    const form = new URLSearchParams({ buscaempresa: q });
-    const res = await fetch(`${BASE_URL}/empresas/busqueda/`, {
+    const searchQuery = isRuc ? digits : `${q} RUC SUNAT`;
+    const gUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}&gl=pe&hl=es`;
+
+    const res = await fetch('https://api.brightdata.com/request', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': UA,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'es-PE,es;q=0.9,en;q=0.8',
-        'Origin': BASE_URL,
-        'Referer': `${BASE_URL}/empresas/busqueda/`,
+        'Authorization': `Bearer ${BRIGHT_KEY}`,
+        'Content-Type': 'application/json',
       },
-      body: form.toString(),
-      redirect: 'follow',
-      signal: AbortSignal.timeout(12000),
+      body: JSON.stringify({
+        zone: BRIGHT_ZONE,
+        url: gUrl,
+        format: 'raw',
+        data_format: 'parsed_json',
+      }),
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!res.ok) {
-      return NextResponse.json({ error: `Error HTTP ${res.status}` }, { status: 502 });
+      const errText = await res.text();
+      return NextResponse.json({ error: `Bright Data error ${res.status}: ${errText.slice(0, 100)}` }, { status: 502 });
     }
 
-    const html = await res.text();
-    const finalUrl = res.url;
+    const json = await res.json() as any;
+    const organic: any[] = Array.isArray(json?.organic) ? json.organic : [];
 
-    // Si redireccionó a la página de una empresa concreta
-    if (finalUrl.includes('/empresa-') && finalUrl.includes('-peru.php')) {
-      const data = parseSinglePage(html);
-      if (data) return NextResponse.json(data);
-      return NextResponse.json({ error: 'No se pudo extraer datos de la empresa' }, { status: 404 });
-    }
-
-    // Página con lista de resultados
-    const results = parseListPage(html);
-    if (results.length === 0) {
+    if (organic.length === 0) {
       return NextResponse.json({ error: 'No se encontraron resultados en SUNAT' }, { status: 404 });
     }
-    if (results.length === 1) {
-      return NextResponse.json(results[0]);
-    }
-    return NextResponse.json({ results: results.slice(0, 10) });
 
+    if (isRuc) {
+      const match = parseRucFromResults(organic, digits);
+      if (match) {
+        return NextResponse.json(match);
+      }
+      return NextResponse.json({ error: `No se encontraron datos para el RUC ${digits}` }, { status: 404 });
+    } else {
+      const list = parseCandidatesFromResults(organic);
+      if (list.length === 0) {
+        return NextResponse.json({ error: 'No se encontraron empresas con ese nombre' }, { status: 404 });
+      }
+      return NextResponse.json({ results: list.slice(0, 8) });
+    }
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? 'Error consultando SUNAT' }, { status: 500 });
   }
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
-
-/** Extrae texto entre dos marcas, eliminando tags HTML internos */
-function between(html: string, open: string, close: string): string {
-  const idx = html.indexOf(open);
-  if (idx === -1) return '';
-  const from = idx + open.length;
-  const to = html.indexOf(close, from);
-  if (to === -1) return '';
-  return html.slice(from, to).replace(/<[^>]*>/g, '').trim();
+function cleanCompanyName(title: string): string {
+  return (title || '')
+    .replace(/\s*-\s*(Facturalo\.pe|Trámites Perú|Trámites|UniversidadPeru|Scribd|TodoLicitaciones|Consulta RUC|SUNAT|ArchivoBiz|Guía Legal|InfoEmpresa|Páginas Amarillas).*$/i, '')
+    .replace(/\s*\|\s*.*$/, '')
+    .replace(/^RUC\s*:\s*\d{11}\s*[-–]\s*/i, '')
+    .trim();
 }
 
-/** Busca el valor de celda de tabla adyacente a una etiqueta */
-function tableValue(html: string, label: RegExp): string {
-  const m = html.match(label);
-  if (!m) return '';
-  const afterLabel = html.slice(html.indexOf(m[0]) + m[0].length);
-  // Siguiente <td...>...</td>
-  const cell = afterLabel.match(/<td[^>]*>([\s\S]*?)<\/td>/i);
-  return cell ? cell[1].replace(/<[^>]*>/g, '').trim() : '';
-}
+function parseRucFromResults(results: any[], ruc: string) {
+  let bestNombre = '';
+  let bestEstado = 'ACTIVO';
+  let bestCondicion = 'HABIDO';
+  let bestDireccion = '';
 
-/** Parsea la página de detalle de UNA empresa */
-function parseSinglePage(html: string): any | null {
-  // RUC: secuencia de 11 dígitos que aparece en el HTML
-  const rucMatch = html.match(/\b(10|15|16|17|20)\d{9}\b/);
-  const ruc = rucMatch?.[0] ?? '';
+  for (const item of results) {
+    const title = item.title || '';
+    const desc = item.description || '';
+    const text = `${title} ${desc}`;
 
-  // Razón social: título h1 o h2, o celda de tabla
-  const nombre =
-    between(html, '<h1', '</h1>') ||
-    between(html, '<h2', '</h2>') ||
-    tableValue(html, /Raz[oó]n\s+Social/i) ||
-    tableValue(html, /Nombre\s+o\s+Raz[oó]n/i);
+    // Razón social
+    if (!bestNombre) {
+      const rsMatch = desc.match(/Raz[oó]n\s+Social:\s*([^;.]+)/i);
+      if (rsMatch && rsMatch[1].trim().length > 3) {
+        bestNombre = rsMatch[1].trim();
+      } else {
+        const cleaned = cleanCompanyName(title);
+        if (cleaned && cleaned.length > 3 && !cleaned.toLowerCase().includes('consulta ruc') && !cleaned.toLowerCase().includes('superintendencia')) {
+          bestNombre = cleaned;
+        }
+      }
+    }
 
-  const estado     = tableValue(html, /Estado\s+del\s+Contribuyente/i) || tableValue(html, /Estado:/i);
-  const condicion  = tableValue(html, /Condici[oó]n\s+del\s+Contribuyente/i) || tableValue(html, /Condici[oó]n:/i);
-  const direccion  = tableValue(html, /Domicilio\s+Fiscal/i) || tableValue(html, /Direcci[oó]n:/i);
+    // Estado
+    const estMatch = desc.match(/estado\s+([A-ZÁÉÍÓÚÑ]+)/i);
+    if (estMatch && ['ACTIVO', 'BAJA', 'SUSPENDIDO', 'INACTIVO'].includes(estMatch[1].toUpperCase())) {
+      bestEstado = estMatch[1].toUpperCase();
+    }
 
-  if (!ruc && !nombre) return null;
-  return { ruc, nombre, estado, condicion, direccion };
-}
+    // Condicion
+    const condMatch = desc.match(/condici[oó]n\s+([A-ZÁÉÍÓÚÑ]+)/i);
+    if (condMatch && ['HABIDO', 'NO HABIDO', 'NO HALLADO', 'PENDIENTE'].includes(condMatch[1].toUpperCase())) {
+      bestCondicion = condMatch[1].toUpperCase();
+    }
 
-/** Parsea la página de lista de resultados (múltiples empresas) */
-function parseListPage(html: string): any[] {
-  const results: any[] = [];
-  const seen = new Set<string>();
-
-  // Patrón 1: enlaces a páginas de empresa con nombre visible
-  const linkRe = /href="([^"]*\/empresa-[^"]+\.php)"[^>]*>\s*([^<]{4,})/gi;
-  for (const m of html.matchAll(linkRe)) {
-    const name = m[2].trim();
-    if (!name || seen.has(name)) continue;
-    // Buscar RUC cercano al enlace
-    const pos = html.indexOf(m[0]);
-    const ctx = html.slice(Math.max(0, pos - 300), pos + 300);
-    const rucNear = ctx.match(/\b(10|15|16|17|20)\d{9}\b/)?.[0] ?? '';
-    seen.add(name);
-    results.push({ ruc: rucNear, nombre: name, estado: '', condicion: '', direccion: '' });
-  }
-
-  // Patrón 2: filas de tabla con RUC + nombre (si no encontramos enlaces)
-  if (results.length === 0) {
-    const rowRe = /\b((10|15|16|17|20)\d{9})\b[^<]{0,60}([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑA-Za-z\s&.,'-]{5,80})/g;
-    for (const m of html.matchAll(rowRe)) {
-      const ruc = m[1], nombre = m[3]?.trim();
-      if (!ruc || !nombre || seen.has(ruc)) continue;
-      seen.add(ruc);
-      results.push({ ruc, nombre, estado: '', condicion: '', direccion: '' });
+    // Domicilio fiscal
+    if (!bestDireccion) {
+      const dirMatch = desc.match(/(?:domicilio fiscal est[aá] en|direcci[oó]n:?|ubicad[oa] en)\s+([^.]+)/i);
+      if (dirMatch && dirMatch[1].trim().length > 5) {
+        bestDireccion = dirMatch[1].trim();
+      }
     }
   }
 
-  return results;
+  if (!bestNombre) return null;
+
+  return {
+    ruc,
+    nombre: bestNombre,
+    estado: bestEstado,
+    condicion: bestCondicion,
+    direccion: bestDireccion,
+  };
+}
+
+function parseCandidatesFromResults(results: any[]) {
+  const seen = new Set<string>();
+  const list: any[] = [];
+
+  for (const item of results) {
+    const text = `${item.title || ''} ${item.description || ''}`;
+    const rucMatch = text.match(/\b(10|15|16|17|20)\d{9}\b/);
+    if (!rucMatch) continue;
+
+    const ruc = rucMatch[0];
+    if (seen.has(ruc)) continue;
+    seen.add(ruc);
+
+    let nombre = '';
+    const rsMatch = (item.description || '').match(/Raz[oó]n\s+Social:\s*([^;.]+)/i);
+    if (rsMatch) {
+      nombre = rsMatch[1].trim();
+    } else {
+      nombre = cleanCompanyName(item.title || '');
+    }
+
+    if (!nombre || nombre.toLowerCase().includes('consulta ruc')) continue;
+
+    const estMatch = (item.description || '').match(/estado\s+([A-ZÁÉÍÓÚÑ]+)/i);
+    const estado = estMatch ? estMatch[1].toUpperCase() : 'ACTIVO';
+
+    list.push({
+      ruc,
+      nombre,
+      estado,
+      condicion: 'HABIDO',
+      direccion: '',
+    });
+  }
+
+  return list;
 }
