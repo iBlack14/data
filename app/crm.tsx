@@ -186,6 +186,84 @@ Tel / WhatsApp: +51 994 282 396
 https://odiseacloud.com`
   },
   {
+    id: 'aulas_virtuales',
+    name: '🎓 Aulas Virtuales & eLearning',
+    badge: 'Educación Online',
+    subject: (r?: Row) => `Aula virtual y campus eLearning para ${r?.name||'{{empresa}}'}`,
+    getMessage: (r: Row) => `Estimado equipo de ${r.name},
+
+Le saluda el equipo de OdiseaCloud. Queremos presentarles nuestra solución de Aulas Virtuales y Campus eLearning para instituciones educativas y centros de capacitación:
+
+• Campus personalizado con Moodle o LMS a medida, adaptable a celulares y con espacios para docentes y estudiantes.
+• Cursos con clases en vivo y grabaciones, integradas con Google Meet o Zoom, además de materiales, tareas y foros.
+• Evaluaciones con corrección automática, seguimiento del progreso y reportes académicos.
+• Matrículas y pagos en línea; emisión de certificados digitales con código QR verificable, según el alcance acordado.
+
+¿Tendrían disponibilidad para una breve reunión esta semana para conocer sus necesidades y preparar una propuesta de plataforma educativa?
+
+Atentamente,
+OdiseaCloud · Soluciones Digitales
+contacto@odiseacloud.com
+Tel / WhatsApp: +51 994 282 396
+https://odiseacloud.com`
+  },
+  {
+    id: 'hosting_web',
+    name: '☁️ Hosting Web SSD NVMe',
+    badge: 'Infraestructura Cloud',
+    subject: (r?: Row) => `Hosting web seguro y de alto rendimiento para ${r?.name||'{{empresa}}'}`,
+    getMessage: (r: Row) => `Estimado equipo de ${r.name},\n\nLe saluda el equipo de OdiseaCloud. Ponemos a su disposición nuestro servicio de hosting web de alto rendimiento para alojar su sitio y mantenerlo disponible:\n\n• Alojamiento con discos SSD NVMe y administración mediante cPanel.\n• Certificado SSL gratuito para conexiones seguras.\n• Soporte técnico para consultas e incidencias del servicio.\n\nEl plan se define según el espacio, tráfico, correo y recursos que requiera su proyecto. ¿Podemos revisar su necesidad y recomendarles una opción?\n\nAtentamente,\nOdiseaCloud · Soluciones Cloud\ncontacto@odiseacloud.com\nTel / WhatsApp: +51 994 282 396\nhttps://odiseacloud.com`
+  },
+  {
+    id: 'dominios',
+    name: '🌐 Registro & Gestión de Dominios',
+    badge: 'Identidad Digital',
+    subject: (r?: Row) => `Registro y administración de dominio para ${r?.name||'{{empresa}}'}`,
+    getMessage: (r: Row) => `Estimado equipo de ${r.name},\n\nEn OdiseaCloud podemos ayudarles a registrar, renovar y administrar el dominio de su empresa (.com, .pe, .org y otras extensiones disponibles).\n\n• Asesoría para elegir una dirección web alineada con su marca.\n• Gestión de renovación y configuración técnica de DNS.\n• Posibilidad de conectar el dominio con su web y correo corporativo.\n\nLa disponibilidad y el costo dependen de la extensión elegida. ¿Qué nombre de dominio desean consultar?\n\nAtentamente,\nOdiseaCloud · Soluciones Cloud\ncontacto@odiseacloud.com\nTel / WhatsApp: +51 994 282 396\nhttps://odiseacloud.com`
+  },
+  {
+    id: 'servidores_cloud',
+    name: '🖥️ Servidores VPS & Cloud',
+    badge: 'Infraestructura Cloud',
+    subject: (r?: Row) => `Servidor VPS o Cloud para ${r?.name||'{{empresa}}'}`,
+    getMessage: (r: Row) => `Estimado equipo de ${r.name},\n\nOdiseaCloud implementa y configura servidores privados virtuales Linux para aplicaciones, sistemas y sitios que requieren recursos dedicados.\n\n• Configuración inicial del entorno y puesta en marcha.\n• Ajuste de recursos según aplicación, concurrencia y almacenamiento.\n• Orientación sobre seguridad, respaldos y mantenimiento del servidor.\n\nLa infraestructura se dimensiona según los requerimientos y el proveedor elegido. ¿Podemos conversar sobre la carga de trabajo que desean alojar?\n\nAtentamente,\nOdiseaCloud · Soluciones Cloud\ncontacto@odiseacloud.com\nTel / WhatsApp: +51 994 282 396\nhttps://odiseacloud.com`
+  },
+  {
+    id: 'mantenimiento_web',
+    name: '🛠️ Mantenimiento Web Continuo',
+    badge: 'Soporte Técnico',
+    subject: (r?: Row) => `Mantenimiento y soporte para el sitio web de ${r?.name||'{{empresa}}'}`,
+    getMessage: (r: Row) => `Estimado equipo de ${r.name},\n\nEn OdiseaCloud brindamos mantenimiento web continuo para conservar su plataforma actualizada y atender incidencias técnicas.\n\n• Actualización periódica de plataforma y complementos.\n• Resolución de incidencias y soporte técnico prioritario según el plan.\n• Revisión del estado general del sitio y recomendaciones de mejora.\n\nEl alcance y la frecuencia se acuerdan según la tecnología y necesidades de su web. ¿Les gustaría que revisemos su sitio y les preparemos una propuesta?\n\nAtentamente,\nOdiseaCloud · Soluciones Digitales\ncontacto@odiseacloud.com\nTel / WhatsApp: +51 994 282 396\nhttps://odiseacloud.com`
+  },
+  {
+    id: 'seguridad_web',
+    name: '🔒 Seguridad Web & Desinfección',
+    badge: 'Protección Digital',
+    subject: (r?: Row) => `Protección y revisión de seguridad web para ${r?.name||'{{empresa}}'}`,
+    getMessage: (r: Row) => `Estimado equipo de ${r.name},\n\nOdiseaCloud ofrece servicios de seguridad web para reforzar la protección de accesos y atender sitios comprometidos.\n\n• Revisión de accesos y configuración de medidas de protección.\n• Limpieza de malware cuando corresponda y recuperación del sitio.\n• Auditoría técnica de vulnerabilidades con autorización del titular.\n\nPrimero revisamos el estado y alcance del sitio para definir acciones y costos. ¿Han detectado algún incidente o desean una revisión preventiva?\n\nAtentamente,\nOdiseaCloud · Soluciones Cloud\ncontacto@odiseacloud.com\nTel / WhatsApp: +51 994 282 396\nhttps://odiseacloud.com`
+  },
+  {
+    id: 'migracion_web',
+    name: '📦 Migración de Páginas Web',
+    badge: 'Traslado Seguro',
+    subject: (r?: Row) => `Migración de sitio web y datos para ${r?.name||'{{empresa}}'}`,
+    getMessage: (r: Row) => `Estimado equipo de ${r.name},\n\nPodemos trasladar su sitio web, tienda virtual y bases de datos a un nuevo servicio de hosting, planificando el proceso para reducir interrupciones y proteger la información.\n\n• Revisión previa de archivos, bases de datos y dependencias.\n• Traslado y configuración en el nuevo hosting.\n• Verificación posterior del sitio y sus funciones principales.\n\nEl plan de migración depende del tamaño y tecnología del proyecto. ¿Nos comparten la web y el hosting de destino para evaluar el alcance?\n\nAtentamente,\nOdiseaCloud · Soluciones Cloud\ncontacto@odiseacloud.com\nTel / WhatsApp: +51 994 282 396\nhttps://odiseacloud.com`
+  },
+  {
+    id: 'optimizacion_web',
+    name: '🚀 Velocidad & Core Web Vitals',
+    badge: 'Optimización Digital',
+    subject: (r?: Row) => `Mejora de velocidad y Core Web Vitals para ${r?.name||'{{empresa}}'}`,
+    getMessage: (r: Row) => `Estimado equipo de ${r.name},\n\nEn OdiseaCloud optimizamos el rendimiento de sitios web para mejorar sus tiempos de carga y experiencia móvil.\n\n• Revisión de rendimiento y métricas Core Web Vitals.\n• Optimización de imágenes, recursos y carga de páginas.\n• Ajustes priorizados según los resultados de la evaluación técnica.\n\nLas mejoras dependen del sitio, su plataforma y el hosting actual. ¿Podemos revisar su web y compartirles oportunidades de optimización?\n\nAtentamente,\nOdiseaCloud · Soluciones Digitales\ncontacto@odiseacloud.com\nTel / WhatsApp: +51 994 282 396\nhttps://odiseacloud.com`
+  },
+  {
+    id: 'seo_tecnico',
+    name: '🔎 SEO Técnico & Posicionamiento',
+    badge: 'Visibilidad Web',
+    subject: (r?: Row) => `SEO técnico para mejorar la visibilidad web de ${r?.name||'{{empresa}}'}`,
+    getMessage: (r: Row) => `Estimado equipo de ${r.name},\n\nOdiseaCloud implementa mejoras de SEO técnico para facilitar la indexación de su sitio en buscadores.\n\n• Revisión de metadatos, estructura y datos estructurados.\n• Configuración y validación de sitemap y elementos de rastreo.\n• Recomendaciones técnicas para mejorar la visibilidad orgánica.\n\nEl trabajo se plantea tras revisar el estado actual del sitio y sus objetivos de búsqueda. ¿Les interesa que hagamos una evaluación inicial?\n\nAtentamente,\nOdiseaCloud · Soluciones Digitales\ncontacto@odiseacloud.com\nTel / WhatsApp: +51 994 282 396\nhttps://odiseacloud.com`
+  },
+  {
     id: 'web_rediseño',
     name: '🌐 Página Web / Rediseño',
     badge: 'Presencia Digital',
@@ -390,6 +468,12 @@ const DEFAULT_QUOTE_SERVICES = [
     priceUSD: 320
   },
   {
+    name: '♻️ Reestructuración & Rediseño Web',
+    detail: 'Modernización estética, tecnológica y funcional de un sitio web existente. El alcance depende de la plataforma actual, las secciones y funcionalidades a conservar o renovar; se cotiza tras revisar el sitio.',
+    pricePEN: 0,
+    priceUSD: 0
+  },
+  {
     name: '⚡ Automatizaciones Comerciales & CRM',
     detail: 'Enrutamiento automático de consultas desde Web y WhatsApp a los asesores responsables. Registro automático de prospectos en CRM y alertas de seguimiento comercial para no perder clientes.',
     pricePEN: 1500,
@@ -412,6 +496,54 @@ const DEFAULT_QUOTE_SERVICES = [
     detail: 'Catálogo de servicios o productos con carrito de compras, pasarela de pagos integrada (Visa, Mastercard, Yape, Plin) y panel de control autoadministrable.',
     pricePEN: 2200,
     priceUSD: 590
+  },
+  {
+    name: '🎓 Aula Virtual & Campus eLearning',
+    detail: 'Implementación inicial de campus educativo personalizado con Moodle o LMS a medida, cursos y materiales, clases en vivo integradas con Google Meet o Zoom, evaluaciones, seguimiento académico y certificados digitales con QR. Matrículas y pasarelas de pago según requerimiento. Precio referencial desde S/ 1,850 el primer año; capacidad, almacenamiento, soporte y renovación se definen en la propuesta.',
+    pricePEN: 1850,
+    priceUSD: 500
+  },
+  {
+    name: '☁️ Hosting Web SSD NVMe',
+    detail: 'Alojamiento web con cPanel, almacenamiento SSD NVMe, certificado SSL gratuito y soporte técnico. Plan, recursos y renovación se cotizan según espacio, tráfico y necesidades del proyecto.',
+    pricePEN: 0,
+    priceUSD: 0
+  },
+  {
+    name: '🌐 Registro & Gestión de Dominios',
+    detail: 'Registro, renovación y administración técnica de dominios .com, .pe, .org y otras extensiones. Precio sujeto a disponibilidad y tarifa de la extensión seleccionada.',
+    pricePEN: 0,
+    priceUSD: 0
+  },
+  {
+    name: '🖥️ Servidor VPS & Cloud',
+    detail: 'Implementación y configuración inicial de servidor privado virtual Linux para aplicaciones y proyectos exigentes. Recursos, proveedor, licencias, soporte y renovación se cotizan según requerimientos.',
+    pricePEN: 0,
+    priceUSD: 0
+  },
+  {
+    name: '🔒 Seguridad Web & Desinfección',
+    detail: 'Revisión de accesos y medidas de protección, limpieza de malware y auditoría técnica de vulnerabilidades autorizada. Alcance y precio sujetos al diagnóstico del sitio.',
+    pricePEN: 0,
+    priceUSD: 0
+  },
+  {
+    name: '📦 Migración de Páginas Web',
+    detail: 'Traslado de sitio web, tienda y bases de datos a un nuevo hosting, con verificación posterior. Precio según tamaño, tecnología, dependencias y destino.',
+    pricePEN: 0,
+    priceUSD: 0
+  },
+  {
+    name: '🚀 Optimización de Velocidad & Core Web Vitals',
+    detail: 'Diagnóstico y optimización del rendimiento, compresión de recursos y experiencia móvil. Alcance y precio se definen según plataforma y resultados de la revisión técnica.',
+    pricePEN: 0,
+    priceUSD: 0
+  },
+  {
+    name: '🔎 SEO Técnico & Posicionamiento Web',
+    detail: 'Optimización técnica de estructura, metadatos, datos estructurados y sitemap para facilitar la indexación en buscadores. Alcance y precio según auditoría y objetivos del sitio.',
+    pricePEN: 0,
+    priceUSD: 0
   }
 ];
 
@@ -422,6 +554,123 @@ function formatMoney(amount: number, currency: string) {
 
 function getServiceAnnexDetails(item: any) {
   const text = `${item?.name || ''} ${item?.detail || ''}`.toLowerCase();
+
+  if (text.includes('aula virtual') || text.includes('campus elearning') || text.includes('moodle') || text.includes('plataforma educativa')) {
+    return {
+      category: 'AULAS VIRTUALES & ELEARNING',
+      mascot: '/assets/images/mascotas/sistemas-web.webp',
+      badge: '★ CAMPUS EDUCATIVO & FORMACIÓN ONLINE',
+      headline: 'Campus Virtual para Cursos, Clases en Vivo y Gestión Académica',
+      deliverables: [
+        { title: 'Campus y Cursos Personalizados', desc: 'Plataforma Moodle o LMS a medida con identidad institucional, cursos, módulos, lecciones y materiales descargables.' },
+        { title: 'Clases en Vivo y Grabaciones', desc: 'Integración de las sesiones de clase con Google Meet o Zoom, con acceso organizado desde el campus.' },
+        { title: 'Evaluaciones y Seguimiento', desc: 'Cuestionarios, tareas, calificaciones y reportes de progreso para docentes y estudiantes.' },
+        { title: 'Matrículas y Certificados Digitales', desc: 'Flujo de matrícula y pagos según alcance; certificados con código QR verificable cuando se incluya en el proyecto.' }
+      ],
+      whatIOffer: [
+        'Configuración inicial de roles para administración, docentes y estudiantes.',
+        'Diseño adaptable a celulares y personalización con la identidad de la institución.',
+        'Orientación para organizar los cursos iniciales y capacitar al equipo responsable.',
+        'Capacidad, almacenamiento, soporte, integraciones y renovaciones definidos con claridad en la propuesta.'
+      ]
+    };
+  }
+
+  if (text.includes('dominio')) {
+    return {
+      category: 'REGISTRO & GESTIÓN DE DOMINIOS',
+      mascot: '/assets/images/mascotas/correo-corporativo.webp',
+      badge: '★ IDENTIDAD DIGITAL PROPIA',
+      headline: 'Dominio Web Registrado y Administrado para tu Empresa',
+      deliverables: [
+        { title: 'Búsqueda de Disponibilidad', desc: 'Consulta de la extensión y nombre elegidos, sujeto a disponibilidad en el momento del registro.' },
+        { title: 'Registro o Renovación', desc: 'Gestión del dominio por el periodo acordado y orientación para su renovación.' },
+        { title: 'Configuración DNS', desc: 'Ajuste de registros necesarios para conectar el dominio con la web, hosting o correo contratados.' },
+        { title: 'Administración Técnica', desc: 'Acompañamiento en cambios de DNS y datos técnicos incluidos en el alcance contratado.' }
+      ],
+      whatIOffer: ['Extensiones .com, .pe, .org y otras sujetas a disponibilidad.', 'Confirmación de titularidad y periodo de registro antes de la compra.', 'Costos de registro y renovación detallados según la extensión elegida.', 'Configuración coordinada para reducir interrupciones del servicio.']
+    };
+  }
+
+  if (text.includes('migración') || text.includes('migracion') || text.includes('traslado de sitio')) {
+    return {
+      category: 'MIGRACIÓN WEB',
+      mascot: '/assets/images/mascotas/sistemas-web.webp',
+      badge: '★ TRASLADO PLANIFICADO',
+      headline: 'Traslado de tu Web, Tienda y Base de Datos a un Nuevo Hosting',
+      deliverables: [
+        { title: 'Revisión del Entorno Actual', desc: 'Inventario de archivos, base de datos, correo y dependencias que forman parte de la migración.' },
+        { title: 'Traslado y Configuración', desc: 'Copia y puesta en marcha del sitio en el hosting de destino según el alcance acordado.' },
+        { title: 'Verificación Funcional', desc: 'Revisión de páginas y funciones principales después del cambio.' },
+        { title: 'Cambio de Dominio o DNS', desc: 'Coordinación de los ajustes DNS necesarios para dirigir el dominio al nuevo servicio.' }
+      ],
+      whatIOffer: ['Plan de migración según plataforma y tamaño del proyecto.', 'Respaldo previo sujeto a accesos y condiciones del hosting de origen.', 'Coordinación del horario para reducir el impacto del cambio.', 'Alcances, dependencias y costos de servicios de terceros definidos antes de iniciar.']
+    };
+  }
+
+  if (text.includes('seguridad web') || text.includes('desinfección') || text.includes('desinfeccion') || text.includes('malware') || text.includes('vulnerabilidad')) {
+    return {
+      category: 'SEGURIDAD WEB & DESINFECCIÓN',
+      mascot: '/assets/images/mascotas/sistemas-web.webp',
+      badge: '★ PROTECCIÓN Y REVISIÓN TÉCNICA',
+      headline: 'Protección, Diagnóstico y Limpieza de Sitios Web',
+      deliverables: [
+        { title: 'Revisión de Seguridad', desc: 'Evaluación técnica del sitio y sus accesos para identificar riesgos dentro del alcance autorizado.' },
+        { title: 'Protección de Accesos', desc: 'Recomendaciones y ajustes de seguridad compatibles con la plataforma y el hosting.' },
+        { title: 'Desinfección de Malware', desc: 'Análisis y limpieza de archivos comprometidos cuando el diagnóstico confirme su presencia.' },
+        { title: 'Informe de Hallazgos', desc: 'Resumen de acciones realizadas y medidas recomendadas para reducir riesgos futuros.' }
+      ],
+      whatIOffer: ['Intervención únicamente con autorización del titular.', 'Alcance definido después de revisar el incidente y el acceso disponible.', 'Respaldo previo cuando las condiciones técnicas lo permitan.', 'Costos de recuperación, licencias o herramientas de terceros se detallan por separado.']
+    };
+  }
+
+  if (text.includes('core web vitals') || text.includes('optimización de velocidad') || text.includes('optimizacion de velocidad') || text.includes('rendimiento móvil')) {
+    return {
+      category: 'OPTIMIZACIÓN DE VELOCIDAD & CORE WEB VITALS',
+      mascot: '/assets/images/mascotas/desarrollo-web.webp',
+      badge: '★ RENDIMIENTO WEB',
+      headline: 'Mejoras de Rendimiento para una Experiencia Web Más Ágil',
+      deliverables: [
+        { title: 'Diagnóstico de Rendimiento', desc: 'Revisión de carga y métricas Core Web Vitals en páginas representativas del sitio.' },
+        { title: 'Optimización de Recursos', desc: 'Mejoras priorizadas en imágenes, hojas de estilo, scripts y recursos de carga.' },
+        { title: 'Experiencia Móvil', desc: 'Revisión de rendimiento y visualización en dispositivos móviles.' },
+        { title: 'Validación de Cambios', desc: 'Comparación de métricas antes y después de los ajustes acordados.' }
+      ],
+      whatIOffer: ['Recomendaciones basadas en el diagnóstico del sitio.', 'Cambios compatibles con la plataforma y el hosting existentes.', 'Alcance acordado antes de modificar funcionalidades o diseño.', 'Resultados sujetos al entorno, contenido y servicios externos utilizados.']
+    };
+  }
+
+  if (text.includes('seo técnico') || text.includes('seo tecnico') || text.includes('posicionamiento web') || text.includes('indexación') || text.includes('indexacion')) {
+    return {
+      category: 'SEO TÉCNICO & POSICIONAMIENTO WEB',
+      mascot: '/assets/images/mascotas/desarrollo-web.webp',
+      badge: '★ BASE TÉCNICA PARA BUSCADORES',
+      headline: 'Estructura Técnica Preparada para la Indexación en Buscadores',
+      deliverables: [
+        { title: 'Revisión de Metadatos', desc: 'Evaluación de títulos, descripciones y elementos técnicos de páginas priorizadas.' },
+        { title: 'Estructura e Indexación', desc: 'Revisión de sitemap, directivas de rastreo y estructura de URLs.' },
+        { title: 'Datos Estructurados', desc: 'Implementación o corrección de marcado estructurado cuando aplique al sitio.' },
+        { title: 'Recomendaciones Técnicas', desc: 'Lista priorizada de ajustes para facilitar el rastreo e indexación del contenido.' }
+      ],
+      whatIOffer: ['Auditoría inicial del sitio y sus páginas principales.', 'Cambios técnicos acordados según plataforma y acceso disponible.', 'Configuración de herramientas de búsqueda si el cliente facilita acceso.', 'El SEO técnico facilita la indexación y no garantiza posiciones o tráfico específicos.']
+    };
+  }
+
+  if (text.includes('mantenimiento web') || text.includes('soporte técnico continuo') || text.includes('mantenimiento & soporte')) {
+    return {
+      category: 'MANTENIMIENTO WEB CONTINUO',
+      mascot: '/assets/images/mascotas/sistemas-web.webp',
+      badge: '★ ACTUALIZACIÓN & SOPORTE',
+      headline: 'Mantenimiento Periódico y Atención de Incidencias Web',
+      deliverables: [
+        { title: 'Actualizaciones', desc: 'Actualización periódica de la plataforma y complementos incluidos en el plan.' },
+        { title: 'Atención de Incidencias', desc: 'Diagnóstico y resolución de incidencias dentro del tiempo y alcance acordados.' },
+        { title: 'Revisión Técnica', desc: 'Verificación general del funcionamiento del sitio y recomendaciones de mantenimiento.' },
+        { title: 'Soporte Prioritario', desc: 'Canal y nivel de prioridad definidos de acuerdo con el plan contratado.' }
+      ],
+      whatIOffer: ['Frecuencia de mantenimiento definida en la propuesta.', 'Alcance de cambios y soporte indicado con claridad.', 'Respaldos y monitoreo incluidos solo si están especificados en el plan.', 'Licencias, hosting y trabajos correctivos mayores se detallan por separado.']
+    };
+  }
   
   if (text.includes('partes') || text.includes('intranet') || text.includes('expediente') || text.includes('trámite') || text.includes('portal de cliente') || text.includes('sistema')) {
     return {
@@ -3339,7 +3588,7 @@ export default function CRM(){
                     style={{fontSize:11,padding:'5px 9px',borderRadius:6,background:'#f8fafc',borderColor:'#cbd5e1'}}
                     onClick={()=>addServiceToQuote(svc)}
                   >
-                    + {svc.name.split('·')[0]} ({formatMoney(activeQuote.currency==='USD'?svc.priceUSD:svc.pricePEN, activeQuote.currency)})
+                    + {svc.name.split('·')[0]} ({svc.pricePEN === 0 ? 'A cotizar' : formatMoney(activeQuote.currency==='USD'?svc.priceUSD:svc.pricePEN, activeQuote.currency)})
                   </button>
                 ))}
               </div>
