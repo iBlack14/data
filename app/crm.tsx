@@ -6,7 +6,7 @@ import {
   LayoutDashboard,Building2,Globe2,Megaphone,Layers3,Plus,Search,ArrowUpRight,
   Download,Upload,X,Check,Mail,MessageCircle,ChevronRight,ChevronLeft,Cloud,
   Trash2,MapPin,ArrowRight,Phone,Globe,Send,Server,CheckCircle2,AlertCircle,
-  RefreshCw,Edit3,FileText,Printer,Copy,DollarSign,Award,ShieldCheck,Zap,Sparkles
+  RefreshCw,Edit3,FileText,Printer,Copy,DollarSign,Award,ShieldCheck,Zap,Sparkles,LoaderCircle
 } from 'lucide-react';
 import QuoteDocument, { type Quote } from './quote-document';
 
@@ -27,6 +27,22 @@ const services=[
   'Optimización de velocidad y Core Web Vitals',
   'SEO técnico y posicionamiento web'
 ];
+const generalSector = (value='') => {
+  const sector = String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (/abogad|estudio juridic|notari|contab|consultor|ingenier|arquitect|inmobiliari|oficina de empresa|medio de comunicacion|radio|representante comercial/.test(sector)) return /ingenier|arquitect|construct|soldador|metal|cerrajer/.test(sector) ? 'Construcción e ingeniería' : 'Servicios profesionales';
+  if (/clinica|hospital|salud|dent|medic|farmac|laboratorio|optica|veterin|odont/.test(sector)) return 'Salud y bienestar';
+  if (/escuela|colegio|educacion|universidad|institucion educativa|academia|instituto/.test(sector)) return 'Educación';
+  if (/gobierno|municip|diputacion|comisaria|policia|ministerio|secretaria municipal|administracion publica|junta municipal/.test(sector)) return 'Gobierno y entidades públicas';
+  if (/ferreter|tienda|comercio|comercial|mayorista|minorista|almacen|supermercado|hipermercado|mercado|libreria|importador|exportador|repuestos|proveedor|venta|gastronom|restaurante|panader|pasteler|bodega/.test(sector)) return 'Comercio y negocios';
+  if (/construct|ingenier|arquitect|cerrajer|soldador|pintura|electric|fontaner|carpinter|obra/.test(sector)) return 'Construcción e ingeniería';
+  if (/fabrica|fabricante|industr|manufactur|metalurg|procesamiento|ceramica|ladrill/.test(sector)) return 'Industria y manufactura';
+  if (/hotel|alojamiento|turis|atraccion|camping|granja|parque|playa|museo|senderismo|recreo|deport|estancia/.test(sector)) return 'Turismo y recreación';
+  if (/transporte|automovil|automotriz|camion|llanta|puerto|movilidad/.test(sector)) return 'Transporte y automotriz';
+  if (/gas|energia|electricidad|agua|servicio de distribucion/.test(sector)) return 'Energía y servicios básicos';
+  if (/iglesia|asociacion|organizacion|comunitario|civico|vivienda|urbanizacion|santuario/.test(sector)) return 'Organizaciones y comunidad';
+  if (!sector || sector === 'general' || sector === 'sin clasificar') return 'Otros';
+  return 'Otros negocios y servicios';
+};
 const slugs=[
   'desarrollo-web','tiendas-virtuales','rediseno-web','sistemas-web','aulas-virtuales',
   'integraciones-automatizaciones','hosting-web','correo-corporativo','dominios',
@@ -264,27 +280,11 @@ https://odiseacloud.com`
     getMessage: (r: Row) => `Estimado equipo de ${r.name},\n\nOdiseaCloud implementa mejoras de SEO técnico para facilitar la indexación de su sitio en buscadores.\n\n• Revisión de metadatos, estructura y datos estructurados.\n• Configuración y validación de sitemap y elementos de rastreo.\n• Recomendaciones técnicas para mejorar la visibilidad orgánica.\n\nEl trabajo se plantea tras revisar el estado actual del sitio y sus objetivos de búsqueda. ¿Les interesa que hagamos una evaluación inicial?\n\nAtentamente,\nOdiseaCloud · Soluciones Digitales\ncontacto@odiseacloud.com\nTel / WhatsApp: +51 994 282 396\nhttps://odiseacloud.com`
   },
   {
-    id: 'web_rediseño',
-    name: '🌐 Página Web / Rediseño',
-    badge: 'Presencia Digital',
-    subject: (r?: Row) => r?.web ? `Propuesta de modernización y rediseño web para ${r.name}` : `Propuesta de diseño web profesional para ${r?.name||'{{empresa}}'}`,
-    getMessage: (r: Row) => r.web ? `Estimado equipo de ${r.name},
-
-Le saluda el equipo de OdiseaCloud. Estuvimos navegando en su sitio web (${cleanWebDomain(r.web)}) y valoramos su trayectoria comercial.
-
-Queremos presentarles una propuesta de modernización y optimización de su portal web:
-
-• Rediseño web moderno, ultra veloz y 100% adaptable a teléfonos móviles (Android e iPhone).
-• Optimización de velocidad de carga y posicionamiento en Google (SEO) para atraer más clientes de su rubro y ciudad.
-• Canales directos de captación y ventas: botón flotante de WhatsApp, catálogo interactivo y formularios de cotización rápida.
-
-¿Podríamos conversar 10 minutos esta semana para mostrarles propuestas y mejoras que podemos implementar en su web?
-
-Atentamente,
-OdiseaCloud · Soluciones Digitales
-contacto@odiseacloud.com
-Tel / WhatsApp: +51 994 282 396
-https://odiseacloud.com` : `Estimado equipo de ${r.name},
+    id: 'web_nueva',
+    name: '🌐 Diseño de Página Web Nueva',
+    badge: 'Nueva Presencia Digital',
+    subject: (r?: Row) => `Propuesta de diseño web profesional para ${r?.name||'{{empresa}}'}`,
+    getMessage: (r: Row) => `Estimado equipo de ${r.name},
 
 Le saluda el equipo de OdiseaCloud. Notamos la excelente presencia y referencias de su empresa en Google Maps, pero identificamos que aún no cuentan con un portal web propio.
 
@@ -295,6 +295,27 @@ Hoy en día, más del 80% de clientes potenciales validan la seriedad de una emp
 • Optimización para captar clientes en Google y botón de contacto directo a WhatsApp para cerrar ventas de inmediato.
 
 ¿Podríamos agendar una breve llamada esta semana para mostrarles una propuesta accesible y adaptada a sus objetivos?
+
+Atentamente,
+OdiseaCloud · Soluciones Digitales
+contacto@odiseacloud.com
+Tel / WhatsApp: +51 994 282 396
+https://odiseacloud.com`
+  },
+  {
+    id: 'web_rediseño',
+    name: '♻️ Rediseño Web para Mejoras',
+    badge: 'Mejora de Sitio Existente',
+    subject: (r?: Row) => `Propuesta de modernización y rediseño web para ${r?.name||'{{empresa}}'}`,
+    getMessage: (r: Row) => `Estimado equipo de ${r.name},
+
+Le saluda el equipo de OdiseaCloud. Revisamos su sitio web (${cleanWebDomain(r.web)}) y queremos proponer mejoras para modernizarlo y facilitar el contacto con sus clientes.
+
+• Rediseño visual moderno y adaptable a celulares.
+• Mejoras de velocidad, navegación y posicionamiento en Google (SEO).
+• Canales de captación como WhatsApp, catálogo y formularios de consulta.
+
+El alcance se define según el estado y la plataforma de su sitio actual. ¿Podríamos conversar 10 minutos para compartirles oportunidades concretas de mejora?
 
 Atentamente,
 OdiseaCloud · Soluciones Digitales
@@ -927,7 +948,21 @@ function renderWithLinks(text:string){
 export default function CRM(){
   const [prospectOpen,setProspectOpen]=useState(false);
   const [selectedPhone,setSelectedPhone]=useState('');
+  const [bulkSelectedIds,setBulkSelectedIds]=useState<Set<string>>(new Set());
+  const [bulkMailOpen,setBulkMailOpen]=useState(false);
+  const [bulkConfirmOpen,setBulkConfirmOpen]=useState(false);
+  const [bulkMailSending,setBulkMailSending]=useState(false);
+  const [bulkMailTemplateId,setBulkMailTemplateId]=useState('sistemas_mesa');
+  const [bulkMailSubject,setBulkMailSubject]=useState(()=>PITCH_TEMPLATES.find(t=>t.id==='sistemas_mesa').subject({name:'{{empresa}}'}));
+  const [bulkMailMessage,setBulkMailMessage]=useState(()=>PITCH_TEMPLATES.find(t=>t.id==='sistemas_mesa').getMessage({name:'{{empresa}}'}));
   const [tab,setTab]=useState('Resumen'),[rows,setRows]=useState<Row[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState(''),[toast,setToast]=useState(''),[query,setQuery]=useState(''),[filters,setFilters]=useState<Row>({country:'',region:'',province:'',district:'',sector:'',contact:'',stage:''}),[page,setPage]=useState(1),[pageSize,setPageSize]=useState(50),[editor,setEditor]=useState<Row|null>(null),[saving,setSaving]=useState(false),[selected,setSelected]=useState<Row|null>(null),[territory,setTerritory]=useState<Row>({country:'Perú',region:'Lima',province:'Lima',city:'Lima',district:'',sector:''}),[campaign,setCampaign]=useState<Row>({name:'Propuesta General',service:'',channel:'Correo',subject:'Propuesta de impulso digital para {{empresa}}',message:'Estimado equipo de {{empresa}},\n\nLe saluda el equipo de OdiseaCloud. Nos comunicamos porque estuvimos revisando su presencia digital y queremos presentarles soluciones tecnológicas a medida para potenciar su visibilidad y captación comercial (diseño y reestructuración web, correos corporativos y automatizaciones).\n\n¿Tendrían disponibilidad para una breve conversación esta semana?\n\nQuedamos atentos a sus comentarios.\n\nAtentamente,\nOdiseaCloud · Soluciones Digitales\ncontacto@odiseacloud.com\nTel / WhatsApp: +51 994 282 396\nhttps://odiseacloud.com'}),[contactMessage,setContactMessage]=useState(''),[contactSubject,setContactSubject]=useState(''),[activeTemplateId,setActiveTemplateId]=useState('sistemas_mesa');
+
+  useEffect(()=>{
+    const savedTab=localStorage.getItem('odisea_crm_active_tab');
+    const validTabs=['Resumen','Empresas','Cotizaciones','Territorios','Campañas','Correos','WhatsApp','Servicios'];
+    if(savedTab&&validTabs.includes(savedTab))setTab(savedTab);
+  },[]);
+  useEffect(()=>{localStorage.setItem('odisea_crm_active_tab',tab);},[tab]);
 
   // Email Accounts State
   const [emailAccounts,setEmailAccounts]=useState<Row[]>([]);
@@ -1507,7 +1542,7 @@ export default function CRM(){
       if(filters.region&&r.region!==filters.region)return false;
       if(filters.province&&r.province!==filters.province)return false;
       if(filters.district&&r.district!==filters.district)return false;
-      if(filters.sector&&r.sector!==filters.sector)return false;
+      if(filters.sector&&generalSector(r.sector)!==filters.sector)return false;
       if(filters.stage&&r.stage!==filters.stage)return false;
 
       // Filtros de canal de contacto
@@ -1523,7 +1558,9 @@ export default function CRM(){
   }, [companies, query, filters]);
 
   const options = (key: string) => {
-    return [...new Set(companies.filter(r => Object.entries(filters).every(([k, v]) => k === key || k === 'stage' || k === 'contact' || !v || r[k] === v)).map(r => r[key]).filter(Boolean))].sort();
+    const matching = companies.filter(r => Object.entries(filters).every(([k, v]) => k === key || k === 'stage' || k === 'contact' || !v || r[k] === v));
+    if(key==='sector') return [...new Set(matching.map(r=>generalSector(r.sector)))].sort();
+    return [...new Set(matching.map(r=>r[key]).filter(Boolean))].sort();
   };
 
   const { totalWithContact, totalWithoutContact, totalWithEmail, totalWithPhone, totalWithBoth, totalWithWeb } = useMemo(() => {
@@ -1561,7 +1598,7 @@ export default function CRM(){
       const headers=matrix.shift()?.map(x=>x.trim().toLowerCase())||[];
       const aliases:Row={empresa:'name',rubro:'sector',pais:'country','país':'country',departamento:'region','región':'region',provincia:'province',ciudad:'city',distrito:'district',correo:'email','teléfono':'phone',telefono:'phone',fuente:'source',verificado:'verified',estado:'stage',servicio:'service',notas:'notes'};
       const seen=new Set(allCompanies.map(r=>(r.name+'|'+r.country+'|'+r.district).toLowerCase()));
-      let duplicates=0;
+      let duplicates=0,noContact=0;
       const batch:Row[]=[];
       for(const cells of matrix){
         const r:Row={...empty,id:crypto.randomUUID(),kind:'company'};
@@ -1570,6 +1607,7 @@ export default function CRM(){
           if(Object.keys(empty).includes(k)&&!['permissionEmail','permissionWhatsApp','suppressed','permissionEvidence'].includes(k))r[k]=cells[i]?.trim()||'';
         });
         if(!r.name)continue;
+        if(![r.email,r.web,r.phone].some(value=>String(value||'').trim())){noContact++;continue;}
         r.stage='Nuevo';
         r.sector=r.sector||'General';
         const key=(r.name+'|'+r.country+'|'+r.district).toLowerCase();
@@ -1577,8 +1615,8 @@ export default function CRM(){
         seen.add(key);
         batch.push(r);
       }
-      if(!batch.length){setToast('No hay empresas nuevas. Usa la columna empresa o name.');return;}
-      await save(batch,`${batch.length} empresas importadas · ${duplicates} duplicados omitidos`);
+      if(!batch.length){setToast(noContact?'No se importaron empresas: faltan correo, web y teléfono.':'No hay empresas nuevas. Usa la columna empresa o name.');return;}
+      await save(batch,`${batch.length} empresas importadas · ${duplicates} duplicados · ${noContact} sin contacto omitidas`);
     }catch(e){
       setToast((e as Error).message);
     }
@@ -1731,6 +1769,42 @@ export default function CRM(){
     }finally{
       setSendingEmail(false);
     }
+  }
+
+  async function sendBulkEmail(){
+    const recipients=allCompanies.filter(company=>bulkSelectedIds.has(company.id)&&company.email&&!company.suppressed);
+    if(!recipients.length){setToast('Selecciona empresas habilitadas con correo registrado.');return;}
+    if(!bulkMailSubject.trim()||!bulkMailMessage.trim()){setToast('Completa el asunto y el mensaje del lote.');return;}
+    const accountId=selectedAccountId||emailAccounts.find(account=>account.isDefault)?.id||emailAccounts[0]?.id;
+    if(!accountId){setToast('Configura una cuenta corporativa en Correos antes de enviar.');return;}
+    setBulkConfirmOpen(true);
+  }
+
+  async function confirmBulkEmailSend(){
+    const recipients=allCompanies.filter(company=>bulkSelectedIds.has(company.id)&&company.email&&!company.suppressed);
+    const accountId=selectedAccountId||emailAccounts.find(account=>account.isDefault)?.id||emailAccounts[0]?.id;
+    if(!recipients.length||!accountId){setBulkConfirmOpen(false);return;}
+    setBulkConfirmOpen(false);
+    setBulkMailSending(true);
+    let sent=0;const failed:string[]=[];
+    for(const company of recipients){
+      const template=PITCH_TEMPLATES.find(t=>t.id===bulkMailTemplateId)||PITCH_TEMPLATES[0];
+      const templateSubject=template.subject({name:'{{empresa}}'});
+      const templateMessage=template.getMessage({name:'{{empresa}}'});
+      const subject=(bulkMailSubject===templateSubject?template.subject(company):bulkMailSubject.replaceAll('{{empresa}}',company.name||''));
+      const message=(bulkMailMessage===templateMessage?template.getMessage(company):bulkMailMessage.replaceAll('{{empresa}}',company.name||''));
+      try{
+        const response=await fetch('/api/email/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accountId,to:company.email,subject,message,companyId:company.id})});
+        const result:any=await response.json();
+        if(!response.ok)throw new Error(result.error||'Error de envío');
+        sent++;
+      }catch(error){failed.push(`${company.name}: ${(error as Error).message}`);}
+    }
+    setBulkMailSending(false);
+    setBulkSelectedIds(new Set());
+    setBulkMailOpen(false);
+    await load();
+    setToast(`Lote terminado: ${sent} enviados${failed.length?`, ${failed.length} fallidos (${failed.slice(0,3).join('; ')})`:''}.`);
   }
 
   // WhatsApp Functions
@@ -2048,8 +2122,30 @@ export default function CRM(){
               </button>
             </div>
 
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap',padding:'0 20px 12px'}}>
+              <span style={{fontSize:11,color:'#526858'}}>{bulkSelectedIds.size} empresas seleccionadas</span>
+              <div style={{display:'flex',gap:7}}>
+                <button type="button" className="textbutton" onClick={()=>setBulkSelectedIds(new Set())} disabled={!bulkSelectedIds.size||bulkMailSending}>Quitar selección</button>
+                <button type="button" className="button" onClick={()=>setBulkMailOpen(v=>!v)} disabled={!bulkSelectedIds.size||bulkMailSending||!emailAccounts.length} title={!emailAccounts.length?'Configura una cuenta SMTP en Correos':''}>
+                  <Mail size={14}/> Preparar correo por lote
+                </button>
+              </div>
+            </div>
+            {bulkMailOpen&&(
+              <section className="card padded" style={{margin:'0 20px 14px',background:'#f8fbf8'}}>
+                <div className="sectionhead" style={{padding:0,marginBottom:12}}><div><b>Envío individual a {allCompanies.filter(c=>bulkSelectedIds.has(c.id)&&c.email&&!c.suppressed).length} destinatarios</b><p>Cada empresa recibe su propio correo; usa {'{{empresa}}'} para personalizarlo.</p></div><button type="button" className="iconbutton" aria-label="Cerrar envío por lote" onClick={()=>setBulkMailOpen(false)}><X size={16}/></button></div>
+                <div className="formgrid">
+                  <label>Cuenta remitente<select value={selectedAccountId||emailAccounts.find(a=>a.isDefault)?.id||emailAccounts[0]?.id||''} onChange={e=>setSelectedAccountId(e.target.value)}>{emailAccounts.map(a=><option key={a.id} value={a.id}>{a.label||a.senderEmail} · {a.senderEmail}</option>)}</select></label>
+                  <label>Plantilla de propuesta<select value={bulkMailTemplateId} onChange={e=>{const id=e.target.value;const tpl=PITCH_TEMPLATES.find(t=>t.id===id)||PITCH_TEMPLATES[0];setBulkMailTemplateId(id);setBulkMailSubject(tpl.subject({name:'{{empresa}}'}));setBulkMailMessage(tpl.getMessage({name:'{{empresa}}'}));}}>{PITCH_TEMPLATES.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
+                  <label>Asunto<input value={bulkMailSubject} onChange={e=>setBulkMailSubject(e.target.value)} placeholder="Propuesta para {{empresa}}"/></label>
+                  <label style={{gridColumn:'1/-1'}}>Mensaje<textarea rows={8} value={bulkMailMessage} onChange={e=>setBulkMailMessage(e.target.value)} onBlur={e=>setBulkMailMessage(cleanWhatsAppText(e.target.value))}/></label>
+                </div>
+                <div className="actions"><button type="button" className="primary" disabled={bulkMailSending||!bulkSelectedIds.size} onClick={sendBulkEmail}>{bulkMailSending?<LoaderCircle className="spin" size={15}/>:<Mail size={15}/>} {bulkMailSending?'Enviando lote…':'Enviar correos individuales'}</button></div>
+              </section>
+            )}
+
             {/* Quick Flow Auto-Advance Buttons */}
-            <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap',padding:'0 20px 8px'}}>
+            <div className="company-quick-filters" style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',padding:'0 20px 10px'}}>
               <span style={{fontSize:10,fontWeight:700,color:'#426046',marginRight:4}}>FLUJO DE AVANCE:</span>
               <button 
                 type="button" 
@@ -2110,7 +2206,7 @@ export default function CRM(){
             </div>
 
             {/* Quick Contact Filter Pills */}
-            <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap',padding:'0 20px 12px'}}>
+            <div className="company-quick-filters company-contact-filters" style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',padding:'0 20px 15px'}}>
               <span style={{fontSize:10,fontWeight:700,color:'#7a8d79',marginRight:4}}>CONTACTO:</span>
               <button 
                 type="button" 
@@ -2151,7 +2247,7 @@ export default function CRM(){
               )}
             </div>
 
-            <div className="filters">
+            <div className="filters company-advanced-filters">
               {[
                 ['country','Todos los países'],
                 ['region','Región / departamento'],
@@ -2198,17 +2294,17 @@ export default function CRM(){
         </>}
 
         {tab==='Territorios'&&<>
-          <div className="prospectentry">
+          {!prospectOpen&&<div className="prospectentry">
             <div>
               <b>Prospecta este territorio</b>
               <p>Busca empresas y guarda los resultados en Empresas, con la ubicación y el rubro seleccionados.</p>
             </div>
             <button className="primary" onClick={()=>setProspectOpen(true)}><Search size={16}/> Extraer empresas de Google Maps</button>
-          </div>
+          </div>}
 
           {prospectOpen&&<ProspectPanel services={services} initial={territory} companies={allCompanies} onImported={load} onClose={()=>setProspectOpen(false)}/>}
 
-          <div className="twocol">
+          {!prospectOpen&&<div className="twocol">
           <section className="card padded">
             <div className="eyebrow">PLANIFICA TU PROSPECCIÓN</div>
             <h2>Un mercado a la vez.</h2>
@@ -2249,7 +2345,7 @@ export default function CRM(){
               </div>
             ))}
           </section>
-          </div>
+          </div>}
         </>}
 
         {tab==='Campañas'&&<>
@@ -2951,12 +3047,6 @@ export default function CRM(){
             <label>Estado
               <select value={editor.stage} onChange={e=>setEditor({...editor,stage:e.target.value})}>{stages.map(s=><option key={s}>{s}</option>)}</select>
             </label>
-            <label className="full">Servicio de interés
-              <select value={editor.service||''} onChange={e=>setEditor({...editor,service:e.target.value})}>
-                <option value="">Por evaluar / Sin asignar</option>
-                {services.map(s=><option key={s} value={s}>{s}</option>)}
-              </select>
-            </label>
           </div>
           <div className="permissions">
             <b>Permisos de contacto</b>
@@ -3063,7 +3153,6 @@ export default function CRM(){
         <p>{[selected.sector,selected.district,selected.province,selected.region,selected.country].filter(Boolean).join(' · ')}</p>
         <dl>
           {[
-            ['Servicio',selected.service||'Por evaluar'],
             ['Correo',selected.email],
             ['Teléfono',selected.phone],
             ['Web',selected.web],
@@ -3910,6 +3999,24 @@ export default function CRM(){
       </div>
     )}
 
+    {bulkConfirmOpen&&(()=>{
+      const count=allCompanies.filter(c=>bulkSelectedIds.has(c.id)&&c.email&&!c.suppressed).length;
+      const account=emailAccounts.find(a=>a.id===(selectedAccountId||emailAccounts.find(x=>x.isDefault)?.id||emailAccounts[0]?.id));
+      const selectedRecipients=allCompanies.filter(c=>bulkSelectedIds.has(c.id)&&c.email&&!c.suppressed);
+      return <div role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setBulkConfirmOpen(false);}} style={{position:'fixed',inset:0,zIndex:1000,background:'rgba(20,35,27,.48)',display:'grid',placeItems:'center',padding:18}}>
+        <section role="dialog" aria-modal="true" aria-labelledby="bulk-confirm-title" style={{width:'min(460px,100%)',background:'#fff',borderRadius:14,boxShadow:'0 24px 70px rgba(10,30,20,.28)',padding:24}}>
+          <div style={{display:'flex',gap:12,alignItems:'flex-start'}}><span style={{width:42,height:42,borderRadius:12,background:'#e8f4ec',color:'#17634e',display:'grid',placeItems:'center',flexShrink:0}}><Mail size={20}/></span><div><h2 id="bulk-confirm-title" style={{margin:'2px 0 5px',fontSize:18,color:'#243b2e'}}>Confirmar envío por lote</h2><p style={{margin:0,fontSize:13,color:'#65766a'}}>Se enviará un correo individual a cada destinatario.</p></div></div>
+          <div style={{marginTop:18,border:'1px solid #e4ebe4',borderRadius:10,padding:14,display:'grid',gap:10,fontSize:13}}>
+            <div style={{display:'flex',justifyContent:'space-between',gap:10}}><span style={{color:'#68776c'}}>Destinatarios</span><b>{count} empresas con correo</b></div>
+            <div style={{display:'flex',justifyContent:'space-between',gap:10}}><span style={{color:'#68776c'}}>Cuenta remitente</span><b style={{textAlign:'right'}}>{account?.senderEmail||'Sin cuenta'}</b></div>
+            <div style={{display:'flex',justifyContent:'space-between',gap:10}}><span style={{color:'#68776c'}}>Plantilla</span><b style={{textAlign:'right'}}>{PITCH_TEMPLATES.find(t=>t.id===bulkMailTemplateId)?.name||'Personalizada'}</b></div>
+            <div style={{borderTop:'1px solid #edf1ed',paddingTop:9}}><span style={{color:'#68776c'}}>Asunto de ejemplo</span><div style={{marginTop:3,fontWeight:600}}>{bulkMailSubject.replaceAll('{{empresa}}',selectedRecipients[0]?.name||'empresa')}</div></div>
+          </div>
+          <p style={{fontSize:11,color:'#738176',lineHeight:1.5,margin:'12px 0 0'}}>Cada mensaje se procesa por separado y el nombre de empresa se personaliza. Puedes cancelar para volver a revisar el texto.</p>
+          <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:20}}><button type="button" className="button" onClick={()=>setBulkConfirmOpen(false)}>Volver a revisar</button><button type="button" className="primary" disabled={!count||bulkMailSending} onClick={confirmBulkEmailSend}><Mail size={15}/> Confirmar y enviar {count}</button></div>
+        </section>
+      </div>;
+    })()}
     {toast&&<div className="toast" role="status"><Check size={18}/>{toast}</div>}
     <datalist id="countries">{countries.map(c=><option key={c} value={c}/>)}</datalist>
   </div>;
@@ -3923,10 +4030,10 @@ export default function CRM(){
       <table>
         <thead>
           <tr>
+            {tab==='Empresas'&&<th style={{width:36}}><input type="checkbox" aria-label="Seleccionar empresas con correo de esta página" checked={pageData.filter(r=>r.email&&!r.suppressed).length>0&&pageData.filter(r=>r.email&&!r.suppressed).every(r=>bulkSelectedIds.has(r.id))} onChange={e=>setBulkSelectedIds(current=>{const next=new Set(current);for(const r of pageData){if(!r.email||r.suppressed)continue;if(e.target.checked)next.add(r.id);else next.delete(r.id);}return next;})}/></th>}
             <th style={{minWidth:170}}>EMPRESA</th>
             <th style={{minWidth:130}}>CONTACTO / WEB</th>
             <th style={{minWidth:110}}>UBICACIÓN</th>
-            <th style={{minWidth:110}}>SERVICIO</th>
             <th style={{minWidth:90}}>ESTADO</th>
             <th style={{minWidth:90}}>SEGUIMIENTO</th>
             <th style={{width:50,textAlign:'center'}}/>
@@ -3940,6 +4047,7 @@ export default function CRM(){
             const isDone = r.stage==='Contactado'||r.stage==='Ganado'||r.stage==='Reunión'||Boolean(r.lastContact);
 
             return <tr key={r.id} style={{background: isDone ? '#f7fbf8' : 'inherit'}}>
+            {tab==='Empresas'&&<td><input type="checkbox" aria-label={`Seleccionar ${r.name}`} disabled={!r.email||!!r.suppressed} checked={bulkSelectedIds.has(r.id)} onChange={e=>setBulkSelectedIds(current=>{const next=new Set(current);if(e.target.checked)next.add(r.id);else next.delete(r.id);return next;})}/></td>}
             <td style={{maxWidth:210}}>
               <button className="companyname" onClick={()=>startContact(r)}>
                 <span className="companyavatar" style={{background: isDone ? '#dcfce7' : '#edf2e9', color: isDone ? '#15803d' : '#7b9474'}}>
@@ -3947,7 +4055,7 @@ export default function CRM(){
                 </span>
                 <span style={{overflow:'hidden',textOverflow:'ellipsis',maxWidth:170}}>
                   <b style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',display:'block',color: isDone ? '#166534' : '#36533f'}} title={r.name}>{r.name}</b>
-                  <small style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',display:'block'}}>{r.sector||'General'}</small>
+                  <small style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',display:'block'}} title={`Rubro original: ${r.sector||'Sin especificar'}`}>{generalSector(r.sector)}</small>
                   {r.rating&&<small style={{color:'#b8860b'}}>★ {r.rating} {r.reviewCount?`(${r.reviewCount})`:''}</small>}
                 </span>
               </button>
@@ -3963,9 +4071,6 @@ export default function CRM(){
             <td style={{maxWidth:130}}>
               <b style={{display:'block',fontSize:11,color:'#36533f',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{r.district||r.city||r.province||'Sin localidad'}</b>
               <small style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{[r.province!==r.district?r.province:'',r.region].filter(Boolean).join(', ')}</small>
-            </td>
-            <td className="servicecell" style={{maxWidth:120,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={r.service||'Por evaluar'}>
-              {r.service ? r.service : <span style={{color:'#9cb39e',fontSize:10,fontStyle:'italic'}}>Por evaluar</span>}
             </td>
             <td style={{whiteSpace:'nowrap'}}>
               <span className={'badge '+(r.suppressed?'off':r.stage==='Ganado'?'won':r.stage==='Contactado'?'won':'')}>

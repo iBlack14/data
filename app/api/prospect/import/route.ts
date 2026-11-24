@@ -12,10 +12,12 @@ export async function POST(request:Request) {
     const existing=await db.select().from(records).where(eq(records.owner,user.userId));
     const known=new Set(existing.filter(r=>r.kind==='company').map(r=>JSON.parse(r.data).mapsId).filter(Boolean));
     let duplicates=0;
+    let withoutContact=0;
     const incoming=[];
     for(const r of body.results) {
       if(!r.name||typeof r.name!=='string'||!r.mapsId||typeof r.mapsId!=='string'||!/^(0x[\da-f]+:0x[\da-f]+|org:|bd:|snip:)/i.test(r.mapsId)||!r.searchTerritory?.country||JSON.stringify(r).length>20000) throw new Error('Resultado inválido. Repite la búsqueda.');
       if(known.has(r.mapsId)){duplicates++;continue;}
+      if(![r.email,r.web,r.phone].some(value=>typeof value==='string'&&value.trim())){withoutContact++;continue;}
       const territory=r.searchTerritory;
       const clean:Record<string,any>={};
       for(const k of ['name','sector','mapsId','placeId','address','phone','web','email','rating','reviewCount','latitude','longitude','source','extractedAt','searchTerritory','emailSources','emails','emailStatus','emailCheckedAt']) if(r[k]!==undefined)clean[k]=r[k];
@@ -28,6 +30,6 @@ export async function POST(request:Request) {
     const inserted=statements.length?await db.batch(statements as [typeof statements[number],...typeof statements[number][]]):[];
     const imported=inserted.reduce((total,rows)=>total+rows.length,0);
     duplicates+=incoming.length-imported;
-    return Response.json({imported,duplicates});
+    return Response.json({imported,duplicates,withoutContact});
   }catch(e:any){return Response.json({error:e.message||'No se pudo importar.'},{status:400});}
 }

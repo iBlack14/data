@@ -11,6 +11,20 @@ const countries=world.map(c=>({code:c.iso2,name:names.of(c.iso2)||c.name})).sort
 await fs.writeFile(new URL('countries.json',output),JSON.stringify(countries));
 for(const country of world){
   const regions=(country.states||[]).map(s=>({name:s.name,cities:[...new Set((s.cities||[]).map(c=>c.name))].sort((a,b)=>a.localeCompare(b,'es')),provinces:[]}));
+  // The source lists Argentina's provinces as states and its localities as
+  // cities. Keep province names at the first level and localities at second.
+  if(country.iso2==='AR'){
+    for(const region of regions){
+      region.provinces=[];
+    }
+  }
+  // The source lists Chilean regions as states and communes as cities; the
+  // official provinces are not included in this dataset.
+  if(country.iso2==='CL'){
+    for(const region of regions){
+      region.provinces=[];
+    }
+  }
   if(country.iso2==='PE'){
     const normalized=value=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     const peru=deps.ubigeo_departamentos.map(d=>({name:title(d.departamento),cities:regions.find(r=>normalized(r.name)===normalized(d.departamento))?.cities||[],provinces:provs.ubigeo_provincias.filter(p=>p.departamento_id===d.id).map(p=>({name:title(p.provincia),districts:dists.ubigeo_distritos.filter(t=>t.provincia_id===p.id&&t.departamento_id===d.id).map(t=>title(t.distrito)).sort((a,b)=>a.localeCompare(b,'es'))})).sort((a,b)=>a.name.localeCompare(b.name,'es'))}));

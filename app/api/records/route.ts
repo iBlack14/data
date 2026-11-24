@@ -20,6 +20,7 @@ export async function POST(request:Request) {
       const {id,kind,...data}=r;
       if(kind==='company') {
         if(typeof data.name!=='string'||!data.name.trim()||typeof data.country!=='string'||!data.country.trim()) throw new Error('Empresa y país son obligatorios.');
+        if(![data.email,data.web,data.phone].some(value=>typeof value==='string'&&value.trim())) throw new Error('No se puede guardar una empresa sin correo, web o teléfono.');
         if((data.permissionEmail||data.permissionWhatsApp)&&!String(data.permissionEvidence||'').trim()) {
           data.permissionEvidence = 'Dato público comercial extraído de Google Maps';
         }

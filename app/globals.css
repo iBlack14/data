@@ -175,3 +175,18 @@
 .pitch-option-badge{flex:0 0 auto;font-size:9px;background:#eff5ef;color:#57705c;padding:3px 6px;border-radius:5px;font-weight:600;white-space:nowrap}
 .pitch-option.active .pitch-option-badge{background:#1a523c;color:#c1f0d7}
 @media(max-width:560px){.pitch-picker{padding:13px}.pitch-picker-head{align-items:flex-start;flex-direction:column;gap:8px}.pitch-site-link,.pitch-site-missing{max-width:100%}.pitch-options{grid-template-columns:1fr}.pitch-option{min-height:40px}}
+
+/* Empresas: filtros claros, ordenados y adaptables */
+.company-quick-filters{padding-top:12px!important;border-top:1px solid #edf1ed;margin:0 20px}
+.company-quick-filters>span{flex:0 0 128px;font-size:9px!important;letter-spacing:.08em;color:#718078!important}
+.company-quick-filters button{min-height:31px;padding:6px 11px!important;border-radius:999px!important;font-size:10px!important;transition:background .16s,border-color .16s,transform .16s}
+.company-quick-filters button:hover{transform:translateY(-1px)}
+.company-contact-filters{border-top:0;padding-top:2px!important;padding-bottom:16px!important}
+.company-advanced-filters{display:grid;grid-template-columns:repeat(4,minmax(145px,1fr)) auto;gap:9px;padding:15px 20px 18px!important;background:#f8faf8;border-top:1px solid #edf1ed;border-bottom:1px solid #edf1ed;align-items:center}
+.company-advanced-filters select{width:100%;max-width:none!important;min-height:39px;margin:0;padding:9px 32px 9px 12px;border-radius:9px;background-color:#fff;color:#40564b;font-size:11px;box-shadow:0 1px 2px #17342608}
+.company-advanced-filters select:focus{border-color:#4e9677;box-shadow:0 0 0 3px #4e96771c}
+.company-advanced-filters .textbutton{margin:0;justify-self:end;padding:8px 10px;font-size:11px}
+.company-advanced-filters+.tablewrap{border-top:0}
+@media(max-width:1100px){.company-advanced-filters{grid-template-columns:repeat(3,minmax(135px,1fr))}.company-advanced-filters .textbutton{justify-self:start}}
+@media(max-width:760px){.company-quick-filters{margin:0 14px}.company-quick-filters>span{flex-basis:100%;margin-bottom:2px}.company-advanced-filters{grid-template-columns:repeat(2,minmax(0,1fr));padding:13px 14px 16px!important;gap:8px}.company-advanced-filters select{max-width:none!important}.company-advanced-filters .textbutton{grid-column:1/-1;justify-self:start}}
+@media(max-width:420px){.company-advanced-filters{grid-template-columns:1fr}}
