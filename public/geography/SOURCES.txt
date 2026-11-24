@@ -1,4 +1,7 @@
 Country/state/city database: https://github.com/dr5hn/countries-states-cities-database (ODbL 1.0). Simplified names-only derivative database, distributed under ODbL 1.0.
+Latin America administrative divisions: geoBoundaries gbOpen API, https://www.geoboundaries.org/api.html (CC BY 4.0; attribution required). ADM levels are sourced per country and attached by polygon containment; coverage depth varies by country.
+Argentina province/department/locality hierarchy: Servicio Georef – https://www.argentina.gob.ar/georef (CC BY 4.0; modified and redistributed with attribution). Source delivers 4,028 locality records; repeated names within a department are collapsed to 3,923 selectable locality names.
+Chile region/province/commune hierarchy: https://github.com/cortega26/chile-hub/blob/main/data/normalized/comunas.json; source: BCN ArcGIS + INE reference files (CC BY, attribution required).
 Peru administrative hierarchy: https://github.com/RitchieRD/ubigeos-peru-data (CC0).
-Generated: 2026-11-24T00:02:27.225Z
+Generated: 2026-11-24T01:24:52.722Z
 Rebuild source: scripts/prepare-geography.mjs in the application source.

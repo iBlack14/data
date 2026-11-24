@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import LocationFields from './location-fields';
 import {Search,Download,ExternalLink,Mail,LoaderCircle,Square,X,MapPin,Zap,CheckCircle2,FileSpreadsheet,Globe,Pause,Play,RotateCcw,Trash2} from 'lucide-react';
 import PE_REGIONS_DATA from '../public/geography/PE.json';
@@ -12,7 +12,7 @@ import {
   cleanPhone
 } from '../lib/peru-localities';
 
-const SWEEP_STORAGE_KEY = 'odisea_sweep_state_v2';
+const SWEEP_STORAGE_KEY = 'odisea_sweep_state_v3';
 
 function saveSweepState(
   queue: TargetLocation[],
@@ -50,6 +50,44 @@ function clearSweepState() {
   } catch (e) {}
 }
 
+function normalizedPlace(value:string){return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es').trim();}
+
+function foldPlace(value:string){return normalizedPlace(value).replace(/[^a-z0-9]+/g,' ').trim();}
+
+function buildInternationalNationalQueue(regions:GeoRegion[]):TargetLocation[]{
+  const priority:TargetLocation[]=[];
+  const detailed:TargetLocation[]=[];
+  for(const region of regions){
+    const byName=new Map(region.provinces.map(province=>[foldPlace(province.name),province]));
+    const resolveProvince=(city:string)=>{
+      const cityKey=foldPlace(city);
+      const exact=byName.get(cityKey);
+      if(exact)return exact;
+      const matches=region.provinces.filter(province=>{
+        const provinceKey=foldPlace(province.name);
+        return provinceKey.startsWith(`${cityKey} `)||cityKey.startsWith(`${provinceKey} `);
+      });
+      return matches.length===1?matches[0]:undefined;
+    };
+    const majorTargets=region.cities.map(city=>{
+      const province=resolveProvince(city);
+      return {region:region.name,province:province?.name||'',district:city,label:`${city}${province?` (${province.name}, ${region.name})`:` (${region.name})`}`};
+    });
+    const majorKeys=new Set(majorTargets.map(target=>`${foldPlace(target.region)}|${foldPlace(target.province)}|${foldPlace(target.district)}`));
+    const remaining=region.provinces.flatMap(province=>province.districts.length
+      ? province.districts.filter(district=>!majorKeys.has(`${foldPlace(region.name)}|${foldPlace(province.name)}|${foldPlace(district)}`)).map(district=>({region:region.name,province:province.name,district,label:`${district} (${province.name}, ${region.name})`}))
+      : [{region:region.name,province:province.name,district:'',label:`${province.name} (${region.name})`}]);
+    priority.push(...majorTargets);
+    detailed.push(...remaining);
+  }
+  const seen=new Set<string>();
+  return [...priority,...detailed].filter(target=>{const key=[target.region,target.province,target.district].map(normalizedPlace).join('|');if(seen.has(key))return false;seen.add(key);return true;});
+}
+
+function buildInternationalPriorityQueue(regions:GeoRegion[]):TargetLocation[]{
+  return regions.map(region=>({region:region.name,province:'',district:'',label:`Toda la región ${region.name}`}));
+}
+
 type Row=Record<string,any>;
 
 type GeoProvince = {
@@ -63,7 +101,7 @@ type GeoRegion = {
   provinces: GeoProvince[];
 };
 type GeoCountry = {code:string,name:string};
-const LATAM_COUNTRY_CODES=new Set(['AR','BO','BR','CL','CO','CR','CU','DO','EC','SV','GT','HN','MX','NI','PA','PY','PE','PR','UY','VE','HT']);
+const LATAM_COUNTRY_CODES=new Set(['AR','BO','BR','CL','CO','CR','CU','DO','EC','SV','GT','HN','MX','NI','PA','PY','PE','PR','UY','VE','HT','BZ','GY','SR','JM','TT','GF','GP','MQ']);
 
 const LIMA_DISTRICTS = [
   "Ancón", "Ate", "Barranco", "Breña", "Carabayllo", "Chaclacayo", "Chorrillos", "Cieneguilla",
@@ -206,7 +244,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
 
   // Estados del barrido automático multirregional (Todo el Perú)
   const [autoScope,setAutoScope]=useState<'province'|'national'>('province');
-  const [nationalType,setNationalType]=useState<'all'|'top'>('all');
+  const [nationalType,setNationalType]=useState<'all'|'top'>(initial.country&&initial.country!=='Perú'?'top':'all');
   const [geoCountries,setGeoCountries]=useState<GeoCountry[]>([]);
   const [autoGeoRegions,setAutoGeoRegions]=useState<GeoRegion[]>(PE_REGIONS_DATA as unknown as GeoRegion[]);
   const [autoRegion,setAutoRegion]=useState<string>(initial.region || 'Lima');
@@ -317,10 +355,13 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
   }, []);
 
   const peRegions = autoGeoRegions;
+  const internationalAllEstimate = useMemo(()=>isPeru?0:buildInternationalNationalQueue(peRegions).length,[isPeru,peRegions]);
   const currentRegionData = peRegions.find(r => r.name.toLowerCase() === autoRegion.toLowerCase()) || peRegions.find(r => r.name === 'Lima') || peRegions[0];
   const availableProvinces = currentRegionData?.provinces || [];
   const currentProvinceData = availableProvinces.find(p => p.name.toLowerCase() === autoProvince.toLowerCase()) || availableProvinces[0];
   const availableDistricts = currentProvinceData?.districts || (currentRegionData?.provinces.length ? [] : currentRegionData?.cities || []);
+  const countryCode=geoCountries.find(c=>c.name===territory.country)?.code;
+  const locationUnitLabel=isPeru?'distritos':countryCode==='CL'?'comunas':countryCode==='AR'?'localidades':availableProvinces.length?'distritos / municipios':'ciudades';
 
   function handleRegionChange(newReg: string) {
     setAutoRegion(newReg);
@@ -401,7 +442,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
     const input=more&&lastSearch?lastSearch:territory;
     const offset=more?nextOffset:0;
     try{
-      const data=await api('search',{...input,offset},abort.signal);
+      const data=await api('search',{...input,countryCode:geoCountries.find(c=>c.name===input.country)?.code?.toLowerCase()||'',offset},abort.signal);
       if(!more){
         setResults(data.results);
         setChosen(new Set(data.results.filter((r:Row)=>!known.has(r.mapsId)).map((r:Row)=>r.mapsId)));
@@ -457,10 +498,15 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
     } else {
       if(autoScope==='province'){
         if(!autoDistricts.length){
-          setError(`Selecciona al menos una ubicación de ${autoProvince||autoRegion} para iniciar.`);
-          return;
+          if(currentProvinceData&&!currentProvinceData.districts.length){
+            queue=[{region:autoRegion,province:currentProvinceData.name,district:'',label:`${currentProvinceData.name} (${autoRegion})`}];
+          }else{
+            setError(`Selecciona al menos una ubicación de ${autoProvince||autoRegion} para iniciar.`);
+            return;
+          }
         }
-        if(isPeru){
+        if(queue.length){}
+        else if(isPeru){
           const base = autoDistricts.map(d=>({region:autoRegion,province:autoProvince,district:d}));
           queue = buildLocationQueue(base, includeLocalities);
         }else{
@@ -469,10 +515,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
       } else {
         if(nationalType === 'all'){
           if(isPeru) queue = buildNationalQueue(peRegions, includeLocalities);
-          else queue = peRegions.flatMap(region=>[
-            ...region.provinces.flatMap(province=>province.districts.map(district=>({region:region.name,province:province.name,district}))),
-            ...region.cities.map(city=>({region:region.name,province:'',district:city,label:`${city} (${region.name})`}))
-          ]);
+          else queue = nationalType==='all' ? buildInternationalNationalQueue(peRegions) : buildInternationalPriorityQueue(peRegions);
         } else {
           queue = buildLocationQueue(autoNationalTargets, includeLocalities);
         }
@@ -506,6 +549,8 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
 
     const sectorName = territory.sector.trim();
     let rateLimited = false;
+    let emptyStreakStopped = false;
+    let consecutiveEmpty = 0;
     setAutoSector(sectorName);
 
     const startIndex = resume ? currentIndexRef.current : 0;
@@ -532,6 +577,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
 
       const input = {
         country: territory.country,
+        countryCode: geoCountries.find(c=>c.name===territory.country)?.code?.toLowerCase()||'',
         region: target.region,
         province: target.province,
         city: target.locality || target.province || target.district,
@@ -555,6 +601,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
           }
         }
         districtResults = uniqueResults;
+        consecutiveEmpty = districtResults.length ? 0 : consecutiveEmpty + 1;
 
         if(withEmails && districtResults.length && !abort.signal.aborted){
           setProgress(`${districtProgress}: Buscando correos en webs (${districtResults.length} empresas)…`);
@@ -597,6 +644,14 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
         try {
           saveSweepState(queue, i + 1, sectorName, autoScope, nationalType, autoRegion, autoProvince, accumulatedRef.current, historyRef.current, targetLabel);
         } catch(e){}
+
+        if(consecutiveEmpty>=10){
+          emptyStreakStopped=true;
+          const message='Barrido pausado tras 10 ubicaciones seguidas sin empresas nuevas para evitar más consultas. Revisa el rubro y el país antes de continuar.';
+          setProgress(message);
+          setAutoProgress(message);
+          break;
+        }
 
         // Si hay una siguiente localidad, pausar para proteger la conexión
         if(i < queue.length - 1 && !abort.signal.aborted){
@@ -655,7 +710,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
     pauseRef.current = false;
     controller.current=null;
 
-    if(abort.signal.aborted || rateLimited){
+    if(abort.signal.aborted || rateLimited || emptyStreakStopped){
       if(currentIndexRef.current < queue.length){
         setHasInterruptedSweep(true);
         const lastTarget = queue[currentIndexRef.current];
@@ -663,7 +718,9 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
         setInterruptedTarget(lastLabel);
         saveSweepState(queue, currentIndexRef.current, sectorName, autoScope, nationalType, autoRegion, autoProvince, accumulatedRef.current, historyRef.current, lastLabel);
       }
-      const message = autoDownloadCSV
+      const message = emptyStreakStopped
+        ? 'Barrido pausado después de 10 ubicaciones consecutivas sin resultados nuevos. Se guardó el avance; revisa el rubro y la cobertura antes de reanudar.'
+        : autoDownloadCSV
         ?'Barrido detenido. Los resultados procesados están disponibles en el panel y los CSVs descargados están en tu carpeta de descargas.'
         :'Barrido detenido. Los resultados procesados siguen disponibles en el panel para descargar o guardar en Empresas.';
       setProgress(message);
@@ -805,7 +862,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
               disabled={autoRunning}
               onClick={()=>setAutoScope('province')}
             >
-              <MapPin size={14}/> Por región y provincia
+              <MapPin size={14}/> {countryCode==='AR'?'Por provincia y departamento':countryCode==='PE'?'Por departamento, provincia y distrito':countryCode==='CL'?'Por región, provincia y comuna':'Por región y división local'}
             </button>
             <button 
               type="button" 
@@ -835,20 +892,20 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
               </div>
             ) : (
               <div>
-                <b>🌎 Cobertura nacional: {nationalType === 'all' ? `Todo ${territory.country}` : 'Zonas comerciales seleccionadas'}</b>
-                <p>Recorre progresivamente las ubicaciones cargadas del país, sin tener que ingresarlas una por una.</p>
+                <b>🌎 Cobertura nacional: {nationalType === 'all' ? `Todo ${territory.country}` : isPeru?'Zonas comerciales seleccionadas':`Búsqueda regional de ${territory.country}`}</b>
+                <p>{isPeru?'Recorre las ubicaciones cargadas del país.':'La modalidad inicial consulta una vez por región. El barrido completo puede generar cientos o miles de consultas, incluso en zonas sin resultados.'}</p>
               </div>
             )}
             <span className="pill">
               {autoScope==='province' 
                 ? `${autoDistricts.length} de ${availableDistricts.length} distritos seleccionados` 
-                : nationalType === 'all' || !isPeru
-                  ? `Todo ${territory.country} (${peRegions.length} regiones)`
-                  : `${autoNationalTargets.length} de ${TOP_PERU_TARGETS.length} ciudades/distritos seleccionados`}
+                : isPeru
+                  ? nationalType === 'all' ? `Todo ${territory.country} (${peRegions.length} regiones)` : `${autoNationalTargets.length} de ${TOP_PERU_TARGETS.length} zonas seleccionadas`
+                  : nationalType === 'all' ? `Todo ${territory.country} (~${internationalAllEstimate.toLocaleString('es')} búsquedas)` : `${peRegions.length} consultas regionales`}
             </span>
           </div>
 
-          {autoScope==='national' && isPeru && (
+          {autoScope==='national' && (
             <div style={{display:'flex',gap:16,alignItems:'center',marginBottom:14,flexWrap:'wrap'}}>
               <span style={{fontSize:12,fontWeight:600,color:'#2b4435'}}>Modalidad del Barrido:</span>
               <label style={{display:'inline-flex',alignItems:'center',gap:6,cursor:'pointer',fontSize:12}}>
@@ -860,7 +917,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
                   disabled={autoRunning} 
                   onChange={()=>setNationalType('all')} 
                 />
-                <span><b>Todo {territory.country}</b> ({peRegions.length} regiones y localidades disponibles)</span>
+                <span><b>Todo {territory.country}</b> ({isPeru?`${peRegions.length} regiones y localidades disponibles`:`~${internationalAllEstimate.toLocaleString('es')} consultas estimadas`})</span>
               </label>
               <label style={{display:'inline-flex',alignItems:'center',gap:6,cursor:'pointer',fontSize:12}}>
                 <input 
@@ -871,7 +928,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
                   disabled={autoRunning} 
                   onChange={()=>setNationalType('top')} 
                 />
-                <span><b>Zonas comerciales clave</b> ({TOP_PERU_TARGETS.length} zonas de Perú)</span>
+                <span><b>{isPeru?'Zonas comerciales clave':'Búsqueda por región'}</b> ({isPeru?`${TOP_PERU_TARGETS.length} zonas de Perú`:`${peRegions.length} consultas regionales`})</span>
               </label>
             </div>
           )}
@@ -879,14 +936,14 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
           <div className="formgrid" style={{marginBottom:15}}>
                 <label>
                   País
-                  <select disabled={autoRunning} value={territory.country} onChange={e=>{const country=e.target.value;setTerritory({...territory,country,region:'',province:'',city:'',district:''});setAutoRegion('');setAutoProvince('');setAutoDistricts([]);}}>
+                  <select disabled={autoRunning} value={territory.country} onChange={e=>{const country=e.target.value;setTerritory({...territory,country,region:'',province:'',city:'',district:''});setAutoRegion('');setAutoProvince('');setAutoDistricts([]);if(country!=='Perú')setNationalType('top');}}>
                     {orderedCountries.map(c=><option key={c.code} value={c.name}>{LATAM_COUNTRY_CODES.has(c.code)?'🌎 ':''}{c.name}</option>)}
                   </select>
                 </label>
 
               {autoScope==='province' && <>
                 <label>
-                  Región / departamento / estado ({peRegions.length} disponibles)
+                  {countryCode==='AR'?'Provincia':countryCode==='PE'?'Departamento':countryCode==='CL'?'Región':'Región / estado / departamento'} ({peRegions.length} disponibles)
                   <select 
                     disabled={autoRunning} 
                     value={autoRegion} 
@@ -898,18 +955,18 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
                   </select>
                 </label>
 
-                <label>
-                  Provincia / ciudad
+                {availableProvinces.length>0&&<label>
+                  {countryCode==='PE'?'Provincia':countryCode==='CL'?'Provincia':countryCode==='AR'?'Departamento':'Provincia / departamento / municipio'}
                   <select 
                     disabled={autoRunning} 
                     value={autoProvince} 
                     onChange={e => handleProvinceChange(e.target.value)}
                   >
-                    {(availableProvinces.length?availableProvinces:availableDistricts.map(name=>({name,districts:[]}))).map(p => (
+                    {availableProvinces.map(p => (
                       <option key={p.name} value={p.name}>{p.name}</option>
                     ))}
                   </select>
-                </label>
+                </label>}
               </>}
 
             <label>
@@ -958,9 +1015,9 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
           {/* Opciones y listado de selección */}
           {autoScope==='province' ? (
             <>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap',marginTop:8}}>
+              {availableDistricts.length>0?<div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap',marginTop:8}}>
                 <span style={{fontSize:11,fontWeight:600,color:'#395444'}}>
-                  {isPeru?'Distritos':'Provincias o ciudades'} a procesar en {autoProvince||autoRegion} ({availableDistricts.length}):
+                  {locationUnitLabel[0].toUpperCase()+locationUnitLabel.slice(1)} a procesar en {autoProvince||autoRegion} ({availableDistricts.length}):
                 </span>
                 <div style={{display:'flex',gap:8}}>
                   <button type="button" className="textbutton" disabled={autoRunning} onClick={()=>setAutoDistricts([...availableDistricts])}>
@@ -975,9 +1032,9 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
                     Desmarcar todos
                   </button>
                 </div>
-              </div>
+              </div>:<div className="notice" style={{marginTop:8}}>El catálogo no divide {autoProvince||autoRegion} en distritos más pequeños. Se buscará directamente esa división local.</div>}
 
-              <div className="districtgrid">
+              {!!availableDistricts.length&&<div className="districtgrid">
                 {availableDistricts.map(d=>(
                   <label key={d} className="districtitem">
                     <input 
@@ -989,7 +1046,7 @@ export default function ProspectPanel({services,initial,companies,onImported,onC
                     <span>{d}</span>
                   </label>
                 ))}
-              </div>
+              </div>}
             </>
           ) : (
             nationalType === 'top' && isPeru && (
